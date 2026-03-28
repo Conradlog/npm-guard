@@ -1,0 +1,55 @@
+{
+  "name": "npm-guard",
+  "version": "2.0.0",
+  "description": "Scan npm packages for malicious lifecycle scripts before installing them",
+  "main": "src/index.js",
+  "bin": {
+    "npm-guard": "./bin/cli.js"
+  },
+  "scripts": {
+    "test": "node test/core/engine.test.js && node test/rules/rules.test.js && node test/formatters/formatters.test.js && node test/core/wrapper.test.js",
+    "test:engine": "node test/core/engine.test.js",
+    "test:rules": "node test/rules/rules.test.js",
+    "test:formatters": "node test/formatters/formatters.test.js",
+    "test:wrapper": "node test/core/wrapper.test.js",
+    "lint": "eslint src/ bin/ test/",
+    "start": "node bin/cli.js"
+  },
+  "files": [
+    "src/",
+    "bin/",
+    "plugins/example-plugin/",
+    "docs/",
+    "AI_INSTRUCTIONS.md",
+    "npmguard.config.example.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "npm",
+    "security",
+    "audit",
+    "lifecycle-scripts",
+    "supply-chain",
+    "scanner",
+    "malware",
+    "preinstall",
+    "postinstall"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "bugs": {
+    "url": ""
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2"
+  },
+  "devDependencies": {}
+}
