@@ -7,7 +7,7 @@
     "npm-guard": "./bin/cli.js"
   },
   "scripts": {
-    "test": "node test/core/engine.test.js && node test/rules/rules.test.js && node test/formatters/formatters.test.js && node test/core/wrapper.test.js",
+    "test": "node test/core/engine.test.js && node test/rules/rules.test.js && node test/rules/dependency-risk.test.js && node test/core/deep-scan.test.js && node test/formatters/formatters.test.js && node test/core/wrapper.test.js",
     "test:engine": "node test/core/engine.test.js",
     "test:rules": "node test/rules/rules.test.js",
     "test:formatters": "node test/formatters/formatters.test.js",

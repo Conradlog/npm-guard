@@ -58,6 +58,7 @@ switch (command) {
 function runCheck(args) {
   const flags = parseFlags(args);
   const packages = args.filter((a) => !a.startsWith("-"));
+  const deep = args.includes("--deep");
 
   if (packages.length === 0) {
     console.error(chalk.red("Specificare almeno un pacchetto. Esempio: npm-guard check express"));
@@ -65,10 +66,52 @@ function runCheck(args) {
   }
 
   const engine = new NpmGuardEngine(flags);
-  const results = packages.map((pkg) => engine.scanPackage(pkg));
 
-  console.log(engine.formatResults(results));
-  process.exit(engine.shouldFail(results) ? 1 : 0);
+  if (deep) {
+    // Scansione profonda: analizza pacchetto + tutte le dipendenze transitive
+    const allResults = [];
+    const allDeepResults = [];
+
+    const isTextOutput = !flags.format || flags.format === "text";
+
+    for (const pkg of packages) {
+      if (isTextOutput) {
+        console.log(chalk.cyan(`\n  Scansione profonda di ${chalk.bold(pkg)}...`));
+        console.log(chalk.gray("  Analisi dipendenze transitive, confronto versioni, controllo eta'...\n"));
+      }
+
+      const deepResult = engine.scanPackageDeep(pkg, {
+        onProgress: (type, name, current, total) => {
+          if (isTextOutput && type === "dep") {
+            process.stderr.write(chalk.gray(`\r  Scansione dipendenza ${current + 1}/${total}: ${name}      `));
+          }
+        },
+      });
+
+      if (isTextOutput && deepResult.dependencies.length > 0) {
+        process.stderr.write("\r" + " ".repeat(80) + "\r");
+      }
+
+      allDeepResults.push(deepResult);
+      allResults.push(deepResult.root);
+      allResults.push(...deepResult.dependencies.filter((d) => d.risk && d.risk.score > 0));
+    }
+
+    // Output formattato
+    const output = engine.formatDeepResults(allDeepResults, { format: flags.format });
+    console.log(output);
+
+    // Exit code basato sul rischio aggregato (rispetta --fail-on)
+    const deepFailed = allDeepResults.some((dr) => {
+      if (!dr.aggregatedRisk) return false;
+      return engine.shouldFail([{ risk: dr.aggregatedRisk }]);
+    });
+    process.exit(deepFailed || engine.shouldFail(allResults) ? 1 : 0);
+  } else {
+    const results = packages.map((pkg) => engine.scanPackage(pkg));
+    console.log(engine.formatResults(results));
+    process.exit(engine.shouldFail(results) ? 1 : 0);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -228,6 +271,7 @@ function parseFlags(args) {
   const flags = {};
   if (args.includes("--json")) flags.format = "json";
   if (args.includes("--html")) flags.format = "html";
+  if (args.includes("--deep")) flags.deep = true;
 
   const formatIdx = args.indexOf("--format");
   if (formatIdx !== -1 && args[formatIdx + 1]) {
@@ -265,6 +309,7 @@ function showHelp() {
     npm-guard check lodash axios     Controlla piu' pacchetti
     npm-guard check express --json   Output JSON (per agenti IA e CI/CD)
     npm-guard check express --html   Output HTML (per report)
+    npm-guard check axios --deep     Scansione profonda (dipendenze transitive)
 
   ${chalk.bold("MODALITA' SCAN:")}
     npm-guard scan                   Scansiona il progetto corrente
@@ -274,6 +319,9 @@ function showHelp() {
   ${chalk.bold("OPZIONI:")}
     --json                           Output JSON (machine-readable)
     --html                           Output HTML (report visivo)
+    --deep                           Scansione profonda: analizza dipendenze
+                                     transitive, confronta versioni, controlla
+                                     eta' pacchetti (anti supply-chain attack)
     --format <text|json|html>        Formato di output
     --fail-on <level>                Exit code 1 se rischio >= level
                                      (low, medium, high, critical)

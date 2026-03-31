@@ -1,8 +1,8 @@
 # npm-guard
 
-> Zero-friction supply chain security for npm. Protects humans and AI agents from malicious lifecycle scripts.
+> Zero-friction supply chain security for npm. Protects humans and AI agents from malicious lifecycle scripts and dependency injection attacks.
 
-When you run `npm install`, packages can execute hidden commands through lifecycle scripts (`preinstall`, `postinstall`). These scripts can steal tokens, delete files, install backdoors, or open reverse shells - silently, automatically.
+When you run `npm install`, packages can execute hidden commands through lifecycle scripts (`preinstall`, `postinstall`). These scripts can steal tokens, delete files, install backdoors, or open reverse shells - silently, automatically. Worse, a legitimate package can be compromised to inject a malicious dependency that carries the payload (as happened with the [axios supply-chain attack of March 2026](https://thehackernews.com/2026/03/axios-supply-chain-attack-pushes-cross.html)).
 
 **npm-guard** catches them **before** they run.
 
@@ -11,12 +11,12 @@ When you run `npm install`, packages can execute hidden commands through lifecyc
 ### For Humans: Transparent Wrapper
 ```bash
 npm-guard setup     # One-time: wraps your npm command
-npm install express  # npm-guard scans automatically, then installs
+npm install express  # npm-guard deep-scans automatically, then installs
 ```
 
 ### For AI Agents: Explicit Check
 ```bash
-npm-guard check express --json   # Machine-readable output
+npm-guard check express --deep --json   # Machine-readable deep scan
 # AI agent parses JSON, decides whether to proceed
 ```
 
@@ -43,11 +43,25 @@ Guided menu with explanations in plain language.
 ### Check Mode (experts, CI, AI agents)
 
 ```bash
-npm-guard check express              # Check one package
-npm-guard check lodash axios react   # Check multiple
+npm-guard check express              # Shallow check (lifecycle scripts only)
+npm-guard check lodash axios react   # Check multiple packages
 npm-guard check express --json       # JSON for machines
 npm-guard check express --html       # HTML report
 ```
+
+### Deep Scan Mode (supply-chain protection)
+
+```bash
+npm-guard check axios --deep         # Full dependency tree analysis
+npm-guard check axios --deep --json  # Deep scan with JSON output
+npm-guard check axios --deep --html  # Deep scan HTML report
+```
+
+The `--deep` flag enables:
+- Recursive scanning of all transitive dependencies
+- Detection of newly-injected dependencies vs. the previous version
+- Package age verification (flags packages published < 7 days ago)
+- Typosquatting name detection (e.g. `plain-crypto-js` mimicking `crypto-js`)
 
 ### Scan Mode (entire project)
 
@@ -65,13 +79,13 @@ npm-guard status     # Check if wrapper is active
 npm-guard uninstall  # Remove wrapper
 ```
 
-After setup, every `npm install <package>` is automatically scanned. If threats are found, the installation is blocked.
+After setup, every `npm install <package>` is automatically deep-scanned. If threats are found, the installation is blocked.
 
 ---
 
 ## What It Detects
 
-### 6 Rule Groups (all pluggable)
+### 7 Rule Groups (all pluggable)
 
 | Rule Group | What it catches | Examples |
 |------------|----------------|----------|
@@ -79,8 +93,9 @@ After setup, every `npm install <package>` is automatically scanned. If threats 
 | **network-access** | Unauthorized network calls | `curl`, `wget`, `netcat`, pipe to `sh` |
 | **file-system** | Access to sensitive paths | `.npmrc`, `.ssh`, `.env`, `.aws`, `/etc/passwd` |
 | **code-execution** | Dynamic/obfuscated execution | `eval`, `base64`, `node -e`, `PowerShell` |
-| **sensitive-files** | Credential theft + exfiltration | `.pem`, `.key`, `id_rsa` + `cat | curl` combo |
+| **sensitive-files** | Credential theft + exfiltration | `.pem`, `.key`, `id_rsa` + `cat \| curl` combo |
 | **obfuscation** | Supply-chain attack patterns | `/dev/tcp`, hex strings, `Buffer.from(base64)`, `crontab`, `launchctl`, silent execution |
+| **dependency-risk** | Dependency injection attacks | New deps vs. previous version, young packages, typosquatting names |
 
 ### Advanced Detection (obfuscation rule)
 
@@ -93,6 +108,19 @@ The obfuscation rule goes beyond simple pattern matching with **combinatorial an
 - **Heavy obfuscation**: counts hex escape sequences, flags if > 10
 - **Persistence**: `crontab`, `systemctl`, `launchctl` for backdoor installation
 
+### Supply-Chain Attack Detection (dependency-risk rule, `--deep`)
+
+The dependency-risk rule, activated by the `--deep` flag, detects the exact attack pattern used in the axios compromise:
+
+| Detection | Severity | What it catches |
+|-----------|----------|-----------------|
+| **New dependency** | HIGH | A dependency was added that didn't exist in the previous version |
+| **Young package** | HIGH/CRITICAL | A dependency was published less than 7 days ago (CRITICAL if < 24h) |
+| **Injected + young** | CRITICAL | New dependency AND recently published (strongest signal of compromise) |
+| **Suspicious name** | HIGH | Name mimics a well-known library with prefix/suffix (e.g. `plain-crypto-js`) |
+
+**Example**: if `axios@1.14.1` adds `plain-crypto-js` (published 20 hours ago, name mimics `crypto-js`), npm-guard would flag it with 4+ findings at CRITICAL level and block the installation.
+
 ---
 
 ## AI Agent Integration
@@ -102,16 +130,18 @@ npm-guard is designed to be used as a **security tool by AI coding agents**.
 ### Protocol
 
 ```bash
-# 1. Check package
-npm-guard check <package> --json
+# 1. Deep-check package before install
+npm-guard check <package> --deep --json
 
 # 2. Parse response
 # summary.maxRiskLevel: "SICURO" | "BASSO" | "MEDIO" | "ALTO" | "CRITICO"
+# results[].depRiskFindings: supply-chain specific alerts
+# results[].suspiciousDependencies: transitive deps with dangerous scripts
 
 # 3. Decision
-# SICURO/BASSO → install
-# MEDIO → install + inform user
-# ALTO/CRITICO → DO NOT install, warn user
+# SICURO/BASSO -> install
+# MEDIO -> install + inform user
+# ALTO/CRITICO -> DO NOT install, warn user
 ```
 
 ### Claude Code
@@ -120,8 +150,9 @@ Add to your project's `CLAUDE.md`:
 
 ```markdown
 Before running `npm install` for new packages, always run:
-`npm-guard check <package> --json`
+`npm-guard check <package> --deep --json`
 If maxRiskLevel is ALTO or CRITICO, do not install.
+Check depRiskFindings for supply-chain indicators.
 ```
 
 Full protocol: [`AI_INSTRUCTIONS.md`](./AI_INSTRUCTIONS.md)
@@ -140,7 +171,8 @@ Create `.npmguardrc.json`:
     "file-system": true,
     "code-execution": true,
     "sensitive-files": true,
-    "obfuscation": true
+    "obfuscation": true,
+    "dependency-risk": true
   },
   "ignore": ["trusted-package"],
   "failOn": "high",
@@ -184,12 +216,22 @@ See [Plugin Guide](./docs/PLUGINS.md).
 ```js
 const { NpmGuardEngine } = require("npm-guard");
 
+// Shallow scan
 const engine = new NpmGuardEngine({ format: "json" });
 const result = engine.scanPackage("express");
 const output = JSON.parse(engine.formatResults([result]));
 
 if (output.summary.maxRiskLevel === "CRITICO") {
   console.error("Blocked!");
+}
+
+// Deep scan (recommended)
+const deep = engine.scanPackageDeep("axios");
+const deepOutput = JSON.parse(engine.formatDeepResults([deep], { format: "json" }));
+
+if (deepOutput.summary.maxRiskLevel === "CRITICO") {
+  console.error("Supply-chain threat detected!");
+  console.error("Alerts:", deep.depRiskFindings);
 }
 ```
 
@@ -203,17 +245,24 @@ npm-guard/
 ├── src/
 │   ├── index.js            # Public API
 │   ├── core/
-│   │   ├── engine.js       # Orchestrator
+│   │   ├── engine.js       # Orchestrator (shallow + deep scan)
 │   │   ├── config.js       # Configuration
-│   │   ├── registry.js     # npm registry (extensible)
+│   │   ├── registry.js     # npm registry + dependency tree resolver
 │   │   └── wrapper.js      # Shell wrapper (setup/uninstall)
-│   ├── rules/              # 6 rule groups (extensible)
+│   ├── rules/              # 7 rule groups (extensible)
+│   │   ├── shell-commands.js
+│   │   ├── network-access.js
+│   │   ├── file-system.js
+│   │   ├── code-execution.js
+│   │   ├── sensitive-files.js
+│   │   ├── obfuscation.js
+│   │   └── dependency-risk.js
 │   ├── formatters/         # text, json, html (extensible)
 │   ├── plugins/            # Plugin loader
 │   └── ui/                 # Interactive mode
 ├── AI_INSTRUCTIONS.md      # Protocol for AI agents
 ├── plugins/example-plugin/ # Example plugin
-├── test/                   # 60 tests
+├── test/                   # 95 tests
 └── docs/                   # Architecture, API, Plugins
 ```
 

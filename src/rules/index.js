@@ -4,6 +4,7 @@ const { FileSystemRule } = require("./file-system");
 const { CodeExecutionRule } = require("./code-execution");
 const { SensitiveFilesRule } = require("./sensitive-files");
 const { ObfuscationRule } = require("./obfuscation");
+const { DependencyRiskRule } = require("./dependency-risk");
 const { BaseRule } = require("./base-rule");
 
 /**
@@ -17,6 +18,7 @@ const BUILTIN_RULES = {
   "code-execution": new CodeExecutionRule(),
   "sensitive-files": new SensitiveFilesRule(),
   "obfuscation": new ObfuscationRule(),
+  "dependency-risk": new DependencyRiskRule(),
 };
 
 /**

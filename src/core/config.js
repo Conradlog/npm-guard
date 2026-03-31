@@ -17,6 +17,7 @@ const DEFAULT_CONFIG = {
     "code-execution": true,
     "sensitive-files": true,
     "obfuscation": true,
+    "dependency-risk": true,
   },
 
   // Severita' minima da mostrare: "low" | "medium" | "high" | "critical"

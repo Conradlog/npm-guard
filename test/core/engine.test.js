@@ -24,7 +24,7 @@ console.log("\n  Engine Tests\n");
 
 test("engine si inizializza con config default", () => {
   const engine = new NpmGuardEngine();
-  assert(engine.rules.length === 6, `Expected 6 rules, got ${engine.rules.length}`);
+  assert(engine.rules.length === 7, `Expected 7 rules, got ${engine.rules.length}`);
   assert(engine.config.format === "text");
 });
 

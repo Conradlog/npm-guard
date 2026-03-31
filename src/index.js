@@ -26,6 +26,7 @@ const { NpmGuardEngine, LIFECYCLE_HOOKS, BUILTIN_SAFE_PATTERNS } = require("./co
 const { loadConfig, DEFAULT_CONFIG } = require("./core/config");
 const { RegistryFetcher } = require("./core/registry");
 const { BaseRule } = require("./rules/base-rule");
+const { DependencyRiskRule } = require("./rules/dependency-risk");
 const { loadRules, BUILTIN_RULES } = require("./rules");
 const { PluginLoader } = require("./plugins/loader");
 const { getFormatter, BUILTIN_FORMATTERS } = require("./formatters");
@@ -37,6 +38,7 @@ module.exports = {
 
   // Per creare regole custom
   BaseRule,
+  DependencyRiskRule,
 
   // Per creare plugin
   PluginLoader,

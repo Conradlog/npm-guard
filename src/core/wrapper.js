@@ -17,8 +17,8 @@ npm() {
   local cmd="\$1"
 
   # Intercetta solo "npm install" e "npm i" (non "npm ci", "npm test", ecc.)
-  if [[ "\$cmd" == "install" || "\$cmd" == "i" || "\$cmd" == "add" ]]; then
-    shift  # Rimuove "install"/"i"/"add"
+  if [[ "\$cmd" == "install" || "\$cmd" == "i" ]]; then
+    shift  # Rimuove "install"/"i"
 
     # Separa flags (--save-dev, --global, ecc.) dai nomi pacchetto
     local packages=()
@@ -34,29 +34,29 @@ npm() {
     # Se ci sono pacchetti specifici, scansionali prima
     if [[ \${#packages[@]} -gt 0 ]]; then
       echo ""
-      echo "\\033[36m  npm-guard:\\033[0m Scansione pacchetti in corso..."
+      echo "\\033[36m  npm-guard:\\033[0m Scansione profonda pacchetti in corso..."
       echo ""
 
-      # Usa il binario globale o npx come fallback
-      local guard_cmd
+      # Usa il binario globale o npx come fallback (array per evitare word-splitting)
+      local guard_cmd=()
       if command -v npm-guard &> /dev/null; then
-        guard_cmd="npm-guard"
+        guard_cmd=("npm-guard")
       else
-        guard_cmd="npx --yes npm-guard"
+        guard_cmd=("npx" "--yes" "npm-guard")
       fi
 
-      # Esegui la scansione con output JSON per parsing affidabile
+      # Esegui la scansione profonda con output JSON per parsing affidabile
       local scan_output
-      scan_output=$(\$guard_cmd "\${packages[@]}" --json 2>/dev/null)
+      scan_output=$("\${guard_cmd[@]}" check "\${packages[@]}" --deep --json 2>/dev/null)
       local scan_exit=\$?
 
       if [[ \$scan_exit -ne 0 ]]; then
         echo ""
-        # Mostra anche l'output human-readable
-        \$guard_cmd "\${packages[@]}" 2>/dev/null
+        # Mostra anche l'output human-readable con scansione profonda
+        "\${guard_cmd[@]}" check "\${packages[@]}" --deep 2>/dev/null
         echo ""
         echo "\\033[31m  npm-guard: BLOCCATO - Trovate minacce nei pacchetti!\\033[0m"
-        echo "\\033[33m  Per installare comunque: command npm \$cmd \${flags[@]} \${packages[@]}\\033[0m"
+        echo "\\033[33m  Per installare comunque: command npm \$cmd \"\${flags[@]}\" \"\${packages[@]}\"\\033[0m"
         echo ""
         return 1
       else

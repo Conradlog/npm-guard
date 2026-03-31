@@ -7,10 +7,12 @@
 **Before running `npm install <package>` or adding any new dependency, you MUST run:**
 
 ```bash
-npm-guard check <package-name> --json
+npm-guard check <package-name> --deep --json
 ```
 
 **Parse the JSON output. If `summary.maxRiskLevel` is `"ALTO"` or `"CRITICO"`, DO NOT proceed with the installation. Inform the user about the risk and ask for explicit approval.**
+
+> The `--deep` flag enables supply-chain attack detection: it scans all transitive dependencies, detects newly-injected packages, checks package age, and flags typosquatting names. **Always use `--deep` for maximum protection.**
 
 ---
 
@@ -41,15 +43,58 @@ If not available, install it:
 npm install -g npm-guard
 ```
 
-### Step 2: Before any `npm install`, run the check
+### Step 2: Before any `npm install`, run the deep check
 
 ```bash
-npm-guard check <package-name> [<package-name-2> ...] --json
+npm-guard check <package-name> [<package-name-2> ...] --deep --json
 ```
+
+> **Why `--deep`?** A shallow check only scans the target package's own scripts. But supply-chain attacks (like the axios attack of March 2026) inject malicious dependencies that carry the payload. `--deep` resolves the full dependency tree and catches these.
 
 ### Step 3: Parse the JSON response
 
-The response structure:
+#### Deep scan response (`--deep --json`):
+
+```json
+{
+  "timestamp": "2026-03-28T12:00:00.000Z",
+  "mode": "deep",
+  "summary": {
+    "packagesAnalyzed": 1,
+    "dependenciesAnalyzed": 12,
+    "newDependenciesFound": 0,
+    "youngPackagesFound": 0,
+    "maxRiskLevel": "SICURO"
+  },
+  "results": [
+    {
+      "package": {
+        "name": "express",
+        "version": "5.2.1",
+        "risk": { "score": 0, "level": "SICURO", "color": "green" },
+        "findings": []
+      },
+      "dependencyAnalysis": {
+        "previousVersion": "5.2.0",
+        "newDependencies": [],
+        "removedDependencies": [],
+        "packageAges": {}
+      },
+      "depRiskFindings": [],
+      "suspiciousDependencies": [],
+      "aggregatedRisk": { "score": 0, "level": "SICURO", "color": "green" }
+    }
+  ]
+}
+```
+
+**Key fields to check:**
+- `summary.maxRiskLevel`: overall verdict (same decision matrix as below)
+- `results[].depRiskFindings`: supply-chain specific alerts (new deps, young packages, typosquatting)
+- `results[].suspiciousDependencies`: transitive deps with dangerous lifecycle scripts
+- `results[].dependencyAnalysis.newDependencies`: deps added vs. previous version
+
+#### Shallow scan response (`--json` without `--deep`):
 
 ```json
 {
@@ -65,11 +110,7 @@ The response structure:
     {
       "name": "express",
       "version": "5.2.1",
-      "risk": {
-        "score": 0,
-        "level": "SICURO",
-        "color": "green"
-      },
+      "risk": { "score": 0, "level": "SICURO", "color": "green" },
       "hasLifecycleScripts": false,
       "findings": []
     }
@@ -132,43 +173,79 @@ npm-guard check <pkg> --json --fail-on high
 
 ## Example: Complete AI Agent Workflow
 
+### Example 1: Safe packages (deep scan)
+
 ```
 User: "Add axios and lodash to the project"
 
 Agent thinks:
   1. I need to install axios and lodash
-  2. First, let me check them with npm-guard
+  2. First, let me deep-check them with npm-guard
 
 Agent runs:
-  $ npm-guard check axios lodash --json
+  $ npm-guard check axios lodash --deep --json
 
 Agent reads JSON:
   summary.maxRiskLevel = "SICURO"
-  summary.safe = 2
+  summary.newDependenciesFound = 0
+  summary.youngPackagesFound = 0
 
 Agent proceeds:
   $ npm install axios lodash
 
 Agent responds:
-  "Done! Both axios and lodash passed security checks and have been installed."
+  "Done! Both axios and lodash passed deep security checks
+   (including dependency tree analysis) and have been installed."
 ```
 
+### Example 2: Supply-chain attack detected
+
 ```
-User: "Install super-cool-package"
+User: "Install axios@1.14.1"
 
 Agent runs:
-  $ npm-guard check super-cool-package --json
+  $ npm-guard check axios@1.14.1 --deep --json
 
 Agent reads JSON:
   summary.maxRiskLevel = "CRITICO"
-  packages[0].findings[0].matches = [
-    { "severity": "critical", "description": "Scarica dati da internet e li esegue immediatamente" }
+  results[0].depRiskFindings = [
+    {
+      "id": "injected-young-dependency",
+      "severity": "critical",
+      "title": "dipendenza iniettata e appena creata: plain-crypto-js",
+      "description": "ALTO RISCHIO: plain-crypto-js è nuova e creata meno di 24 ore fa..."
+    },
+    {
+      "id": "suspicious-name",
+      "severity": "high",
+      "title": "nome sospetto: plain-crypto-js",
+      "description": "Il nome imita crypto-js con il prefisso plain-..."
+    }
+  ]
+  results[0].suspiciousDependencies = [
+    { "name": "plain-crypto-js", "risk": { "level": "CRITICO" } }
   ]
 
 Agent responds:
-  "I found a critical security issue with super-cool-package.
-   Its postinstall script downloads and executes code from the internet.
-   I recommend NOT installing this package. Would you like me to find a safer alternative?"
+  "CRITICAL: axios@1.14.1 has been compromised!
+   A new dependency 'plain-crypto-js' was injected — it didn't exist in the previous
+   version, was published less than 24 hours ago, and its name mimics 'crypto-js'.
+   Its postinstall script contacts a remote server.
+   DO NOT install this version. Use axios@1.13.0 instead."
+```
+
+### Example 3: Shallow scan (legacy)
+
+```
+User: "Quick check on express"
+
+Agent runs:
+  $ npm-guard check express --json
+
+Agent reads JSON:
+  summary.maxRiskLevel = "SICURO"
+
+Agent proceeds normally.
 ```
 
 ---
@@ -181,9 +258,10 @@ If you are **Claude Code**, add this to your CLAUDE.md or project instructions:
 ## Security: npm package installation
 
 Before running `npm install` to add new packages, always run:
-`npm-guard check <package> --json`
+`npm-guard check <package> --deep --json`
 
 If maxRiskLevel is ALTO or CRITICO, do not install. Show the user the findings and ask for approval.
+Check depRiskFindings for supply-chain indicators (new dependencies, young packages, suspicious names).
 ```
 
 ---
@@ -210,7 +288,7 @@ npm-guard can be used as an MCP tool. To expose it as a tool for your AI agent:
 }
 ```
 
-Implementation: run `npm-guard check <packages> --json` and return the parsed JSON.
+Implementation: run `npm-guard check <packages> --deep --json` and return the parsed JSON.
 
 ---
 
@@ -223,3 +301,16 @@ Implementation: run `npm-guard check <packages> --json` and return the parsed JS
 | MEDIUM | MEDIO | 4-10 | Some commands worth reviewing |
 | HIGH | ALTO | 11-14 | Dangerous commands detected |
 | CRITICAL | CRITICO | 15+ | Highly suspicious, likely malicious |
+
+## Deep Scan Detection Rules (`dependency-risk`)
+
+The `--deep` flag activates these additional supply-chain attack detectors:
+
+| Finding ID | Severity | What it detects |
+|------------|----------|-----------------|
+| `new-dependency` | HIGH | A dependency was added that didn't exist in the previous version |
+| `young-package` | HIGH/CRITICAL | A dependency was published less than 7 days ago (CRITICAL if < 24h) |
+| `injected-young-dependency` | CRITICAL | Combination: new dependency AND recently published (strongest signal) |
+| `suspicious-name` | HIGH | Dependency name mimics a well-known library (e.g., `plain-crypto-js` imitates `crypto-js`) |
+
+These findings appear in `results[].depRiskFindings` in the deep-scan JSON output.

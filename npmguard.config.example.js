@@ -14,6 +14,7 @@ module.exports = {
     "code-execution": true,
     "sensitive-files": true,
     "obfuscation": true,
+    "dependency-risk": true,  // Rileva dipendenze iniettate, pacchetti giovani, typosquatting (usata con --deep)
   },
 
   // ─── Soglie ───
