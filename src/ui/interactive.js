@@ -29,69 +29,69 @@ async function menu(title, options) {
 
   console.log("");
   while (true) {
-    const answer = await ask(c.prompt("  Scegli un'opzione (numero): "));
+    const answer = await ask(c.prompt("  Choose an option (number): "));
     const choice = parseInt(answer, 10);
     if (choice >= 1 && choice <= options.length) return options[choice - 1];
-    console.log(chalk.red("  Scelta non valida. Riprova."));
+    console.log(chalk.red("  Invalid choice. Please try again."));
   }
 }
 
 async function confirm(question) {
   while (true) {
-    const answer = await ask(c.prompt(`  ${question} (s/n): `));
+    const answer = await ask(c.prompt(`  ${question} (y/n): `));
     const l = answer.toLowerCase();
     if (["s", "si", "y", "yes"].includes(l)) return true;
     if (["n", "no"].includes(l)) return false;
-    console.log(c.muted("  Rispondi con 's' o 'n'"));
+    console.log(c.muted("  Please answer with 'y' or 'n'"));
   }
 }
 
 function showBanner() {
   console.log("");
   console.log(c.title("  ╔══════════════════════════════════════════════╗"));
-  console.log(c.title("  ║") + c.bold("        npm-guard  -  Proteggi il tuo PC       ") + c.title("║"));
-  console.log(c.title("  ║") + c.muted("   Scansiona i pacchetti npm prima di usarli   ") + c.title("║"));
+  console.log(c.title("  ║") + c.bold("        npm-guard  -  Protect your PC          ") + c.title("║"));
+  console.log(c.title("  ║") + c.muted("    Scan npm packages before using them         ") + c.title("║"));
   console.log(c.title("  ╚══════════════════════════════════════════════╝"));
   console.log("");
-  console.log(c.muted("  Quando installi un pacchetto con 'npm install', quel pacchetto"));
-  console.log(c.muted("  potrebbe eseguire comandi nascosti sul tuo computer."));
-  console.log(c.muted("  npm-guard li trova PRIMA che possano fare danni."));
+  console.log(c.muted("  When you install a package with 'npm install', that package"));
+  console.log(c.muted("  could run hidden commands on your computer."));
+  console.log(c.muted("  npm-guard finds them BEFORE they can do any damage."));
 }
 
 function showExplanation() {
   console.log(`
-  ${c.title("Come funziona npm-guard?")}
+  ${c.title("How does npm-guard work?")}
   ${c.divider}
 
-  Quando installi un pacchetto con ${chalk.bold("npm install")}, quel pacchetto
-  puo' eseguire dei comandi automatici chiamati ${chalk.bold("script lifecycle")}:
+  When you install a package with ${chalk.bold("npm install")}, that package
+  can run automatic commands called ${chalk.bold("lifecycle scripts")}:
 
-  ${c.accent("preinstall")}   -> Si esegue ${chalk.bold("PRIMA")} dell'installazione
-  ${c.accent("postinstall")}  -> Si esegue ${chalk.bold("DOPO")} l'installazione
-  ${c.accent("prepare")}      -> Si esegue durante la preparazione
+  ${c.accent("preinstall")}   -> Runs ${chalk.bold("BEFORE")} installation
+  ${c.accent("postinstall")}  -> Runs ${chalk.bold("AFTER")} installation
+  ${c.accent("prepare")}      -> Runs during preparation
 
-  ${chalk.bold("Il problema:")}
-  Un pacchetto malevolo potrebbe usare questi script per:
-  ${chalk.red("  - Rubare le tue password e token")}
-  ${chalk.red("  - Cancellare file dal tuo computer")}
-  ${chalk.red("  - Scaricare virus da internet")}
-  ${chalk.red("  - Inviare i tuoi dati a server esterni")}
+  ${chalk.bold("The problem:")}
+  A malicious package could use these scripts to:
+  ${chalk.red("  - Steal your passwords and tokens")}
+  ${chalk.red("  - Delete files from your computer")}
+  ${chalk.red("  - Download malware from the internet")}
+  ${chalk.red("  - Send your data to external servers")}
 
-  ${chalk.bold("La soluzione:")}
-  npm-guard analizza ogni pacchetto ${chalk.bold("PRIMA")} che tu lo installi
-  e ti avvisa con un report chiaro.
+  ${chalk.bold("The solution:")}
+  npm-guard analyzes every package ${chalk.bold("BEFORE")} you install it
+  and warns you with a clear report.
 
-  ${chalk.bold("I livelli di rischio:")}
-  ${chalk.green("  SICURO")}   - Nessun comando sospetto. Installa pure!
-  ${chalk.yellow("  BASSO")}    - Comandi minimi, probabilmente innocui
-  ${chalk.hex("#FFA500")("  MEDIO")}    - Alcuni comandi da verificare
-  ${chalk.red("  ALTO")}     - Comandi pericolosi, fai attenzione
-  ${chalk.bgRed.white("  CRITICO")}  - Molto sospetto! Non installare senza verifiche
+  ${chalk.bold("Risk levels:")}
+  ${chalk.green("  SICURO")}   - No suspicious commands. Safe to install!
+  ${chalk.yellow("  BASSO")}    - Minimal commands, probably harmless
+  ${chalk.hex("#FFA500")("  MEDIO")}    - Some commands to review
+  ${chalk.red("  ALTO")}     - Dangerous commands, be careful
+  ${chalk.bgRed.white("  CRITICO")}  - Very suspicious! Do not install without verification
 `);
 }
 
 /**
- * Avvia la modalita' interattiva
+ * Start interactive mode
  */
 async function runInteractive(configOverrides = {}) {
   initReadline();
@@ -101,29 +101,29 @@ async function runInteractive(configOverrides = {}) {
   let running = true;
 
   while (running) {
-    const choice = await menu("Cosa vuoi fare?", [
+    const choice = await menu("What would you like to do?", [
       {
-        label: chalk.bold("Controllare un pacchetto prima di installarlo"),
-        hint: "Es: vuoi fare 'npm install qualcosa' ma prima vuoi controllare se e' sicuro",
+        label: chalk.bold("Check a package before installing it"),
+        hint: "E.g.: you want to run 'npm install something' but first want to check if it's safe",
         action: "scan-one",
       },
       {
-        label: chalk.bold("Controllare piu' pacchetti insieme"),
-        hint: "Scrivi i nomi separati da spazio o virgola",
+        label: chalk.bold("Check multiple packages at once"),
+        hint: "Enter the names separated by spaces or commas",
         action: "scan-many",
       },
       {
-        label: chalk.bold("Controllare tutti i pacchetti del mio progetto"),
-        hint: "Analizza il file package.json e tutte le dipendenze",
+        label: chalk.bold("Check all packages in my project"),
+        hint: "Analyze the package.json file and all dependencies",
         action: "scan-project",
       },
       {
-        label: chalk.bold("Capire come funziona npm-guard"),
-        hint: "Spiegazione semplice di cosa fa questo strumento",
+        label: chalk.bold("Learn how npm-guard works"),
+        hint: "A simple explanation of what this tool does",
         action: "explain",
       },
       {
-        label: chalk.bold("Esci"),
+        label: chalk.bold("Exit"),
         action: "exit",
       },
     ]);
@@ -148,54 +148,54 @@ async function runInteractive(configOverrides = {}) {
 
     if (running) {
       console.log("");
-      running = await confirm("Vuoi fare un'altra operazione?");
+      running = await confirm("Would you like to do something else?");
     }
   }
 
-  console.log(c.accent("\n  Alla prossima! Il tuo PC e' al sicuro.\n"));
+  console.log(c.accent("\n  See you next time! Your PC is safe.\n"));
   rl.close();
 }
 
 async function scanOneInteractive(engine) {
   console.log("");
-  console.log(c.muted("  Scrivi il nome del pacchetto da controllare."));
-  console.log(c.muted("  Esempio: express, lodash, react, axios"));
+  console.log(c.muted("  Enter the package name to check."));
+  console.log(c.muted("  Example: express, lodash, react, axios"));
   console.log("");
 
-  const name = await ask(c.prompt("  Nome del pacchetto: "));
+  const name = await ask(c.prompt("  Package name: "));
   if (!name) {
-    console.log(chalk.red("  Nessun nome inserito."));
+    console.log(chalk.red("  No name entered."));
     return;
   }
 
-  const spinner = createSpinner(`Sto analizzando "${name}"...`);
+  const spinner = createSpinner(`Analyzing "${name}"...`);
   const result = engine.scanPackage(name);
 
   if (result.error) {
-    spinner.fail(`Pacchetto "${name}" non trovato`);
-    console.log(c.muted("\n  Controlla di aver scritto il nome correttamente."));
+    spinner.fail(`Package "${name}" not found`);
+    console.log(c.muted("\n  Make sure you typed the name correctly."));
     return;
   }
 
-  spinner.stop(`Analisi di "${name}" completata`);
+  spinner.stop(`Analysis of "${name}" completed`);
   console.log(engine.formatResults([result]));
 
   if (result.risk.score === 0) {
-    console.log(c.success(`  Puoi installarlo con: npm install ${name}`));
+    console.log(c.success(`  You can install it with: npm install ${name}`));
   }
 }
 
 async function scanManyInteractive(engine) {
   console.log("");
-  console.log(c.muted("  Scrivi i nomi separati da spazio o virgola."));
-  console.log(c.muted("  Esempio: express lodash axios"));
+  console.log(c.muted("  Enter the names separated by spaces or commas."));
+  console.log(c.muted("  Example: express lodash axios"));
   console.log("");
 
-  const input = await ask(c.prompt("  Pacchetti: "));
+  const input = await ask(c.prompt("  Packages: "));
   const names = input.split(/[\s,]+/).filter(Boolean);
 
   if (names.length === 0) {
-    console.log(chalk.red("  Nessun pacchetto inserito."));
+    console.log(chalk.red("  No packages entered."));
     return;
   }
 
@@ -206,10 +206,10 @@ async function scanManyInteractive(engine) {
     const result = engine.scanPackage(names[i]);
     if (!result.error) results.push(result);
   }
-  progressBar(names.length, names.length, "Completato!");
+  progressBar(names.length, names.length, "Done!");
 
   if (results.length === 0) {
-    console.log(chalk.red("\n  Nessun pacchetto trovato."));
+    console.log(chalk.red("\n  No packages found."));
     return;
   }
 
@@ -218,15 +218,15 @@ async function scanManyInteractive(engine) {
 
 async function scanProjectInteractive(engine) {
   console.log("");
-  console.log(c.muted("  Inserisci il percorso della cartella del tuo progetto."));
-  console.log(c.muted("  Premi Invio per usare la cartella corrente."));
+  console.log(c.muted("  Enter the path to your project folder."));
+  console.log(c.muted("  Press Enter to use the current directory."));
   console.log("");
 
-  const input = await ask(c.prompt("  Percorso progetto: "));
+  const input = await ask(c.prompt("  Project path: "));
   const projectPath = path.resolve(input || process.cwd());
 
   if (!fs.existsSync(path.join(projectPath, "package.json"))) {
-    console.log(chalk.red(`\n  Non ho trovato 'package.json' in: ${projectPath}`));
+    console.log(chalk.red(`\n  Could not find 'package.json' in: ${projectPath}`));
     return;
   }
 

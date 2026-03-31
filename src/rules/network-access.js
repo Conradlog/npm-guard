@@ -6,7 +6,7 @@ class NetworkAccessRule extends BaseRule {
   }
 
   get description() {
-    return "Rileva tentativi di accesso alla rete (download, upload, connessioni)";
+    return "Detects network access attempts (downloads, uploads, connections)";
   }
 
   get patterns() {
@@ -15,36 +15,36 @@ class NetworkAccessRule extends BaseRule {
         pattern: /\bcurl\b/,
         id: "curl",
         severity: "critical",
-        title: "curl (richiesta di rete)",
-        description: "Scarica dati da internet o invia i tuoi dati a un server esterno",
+        title: "curl (network request)",
+        description: "Downloads data from the internet or sends your data to an external server",
       },
       {
         pattern: /\bwget\b/,
         id: "wget",
         severity: "critical",
-        title: "wget (download file)",
-        description: "Scarica file da internet sul tuo computer",
+        title: "wget (file download)",
+        description: "Downloads files from the internet to your computer",
       },
       {
         pattern: /\bnc\b/,
         id: "netcat",
         severity: "critical",
-        title: "netcat (connessione di rete)",
-        description: "Apre una connessione di rete nascosta",
+        title: "netcat (network connection)",
+        description: "Opens a hidden network connection",
       },
       {
         pattern: /\|\s*sh\b/,
         id: "pipe-sh",
         severity: "critical",
-        title: "pipe a shell",
-        description: "Passa dati direttamente alla shell per eseguirli come comandi",
+        title: "pipe to shell",
+        description: "Passes data directly to the shell to execute as commands",
       },
       {
         pattern: /\|\s*bash\b/,
         id: "pipe-bash",
         severity: "critical",
-        title: "pipe a bash",
-        description: "Passa dati direttamente a bash per eseguirli come comandi",
+        title: "pipe to bash",
+        description: "Passes data directly to bash to execute as commands",
       },
     ];
   }

@@ -1,14 +1,14 @@
 const { BaseRule } = require("./base-rule");
 
 /**
- * Regola avanzata: rileva dipendenze sospette iniettate in pacchetti legittimi.
- * Progettata per individuare attacchi come quello ad axios (marzo 2026):
- * - Dipendenze nuove rispetto alla versione precedente
- * - Pacchetti pubblicati di recente (< 7 giorni)
- * - Nomi di pacchetti che imitano librerie note (typosquatting)
+ * Advanced rule: detects suspicious dependencies injected into legitimate packages.
+ * Designed to catch attacks like the axios compromise (March 2026):
+ * - New dependencies compared to the previous version
+ * - Recently published packages (< 7 days)
+ * - Package names that mimic well-known libraries (typosquatting)
  *
- * A differenza delle altre regole, questa non analizza i comandi degli script
- * ma riceve metadati sulle dipendenze tramite il campo context.
+ * Unlike other rules, this one does not analyze script commands
+ * but receives dependency metadata via the context field.
  */
 class DependencyRiskRule extends BaseRule {
   get name() {
@@ -16,25 +16,25 @@ class DependencyRiskRule extends BaseRule {
   }
 
   get description() {
-    return "Rileva dipendenze sospette: nuove, troppo recenti, o con nomi ingannevoli";
+    return "Detects suspicious dependencies: new, too recent, or with deceptive names";
   }
 
   get patterns() {
-    // Questa regola non usa pattern regex tradizionali.
-    // L'analisi avviene in analyze() tramite i metadati nel context.
+    // This rule does not use traditional regex patterns.
+    // Analysis happens in analyze() via metadata in context.
     return [];
   }
 
   /**
-   * Analizza i metadati delle dipendenze per trovare segnali di attacco supply-chain.
+   * Analyzes dependency metadata for supply-chain attack signals.
    *
-   * Il context deve contenere:
-   * - context.dependencyAnalysis.newDependencies: array di { name, version } dipendenze nuove
-   * - context.dependencyAnalysis.packageAges: oggetto { name: { ageInDays, publishedAt } }
-   * - context.dependencyAnalysis.previousVersion: string della versione precedente
+   * The context must contain:
+   * - context.dependencyAnalysis.newDependencies: array of { name, version } new dependencies
+   * - context.dependencyAnalysis.packageAges: object { name: { ageInDays, publishedAt } }
+   * - context.dependencyAnalysis.previousVersion: string of the previous version
    *
-   * @param {string} command - Il comando (non usato per questa regola)
-   * @param {object} context - Contesto con metadati dipendenze
+   * @param {string} command - The command (not used for this rule)
+   * @param {object} context - Context with dependency metadata
    * @returns {Array}
    */
   analyze(command, context = {}) {
@@ -42,23 +42,23 @@ class DependencyRiskRule extends BaseRule {
     const analysis = context.dependencyAnalysis;
     if (!analysis) return matches;
 
-    // 1. Dipendenze nuove rispetto alla versione precedente
+    // 1. New dependencies compared to the previous version
     if (analysis.newDependencies && analysis.newDependencies.length > 0) {
       for (const dep of analysis.newDependencies) {
         matches.push({
           ruleGroup: this.name,
           id: "new-dependency",
           severity: "high",
-          title: `nuova dipendenza: ${dep.name}`,
+          title: `new dependency: ${dep.name}`,
           description:
-            `La dipendenza "${dep.name}" non esisteva nella versione precedente ` +
-            `(${analysis.previousVersion || "sconosciuta"}). ` +
-            `Potrebbe essere stata iniettata dopo la compromissione dell'account del maintainer.`,
+            `The dependency "${dep.name}" did not exist in the previous version ` +
+            `(${analysis.previousVersion || "unknown"}). ` +
+            `It may have been injected after the maintainer's account was compromised.`,
         });
       }
     }
 
-    // 2. Dipendenze pubblicate di recente (< 7 giorni)
+    // 2. Recently published dependencies (< 7 days)
     if (analysis.packageAges) {
       for (const [depName, ageInfo] of Object.entries(analysis.packageAges)) {
         if (ageInfo.ageInDays !== null && ageInfo.ageInDays < 7) {
@@ -67,17 +67,17 @@ class DependencyRiskRule extends BaseRule {
             ruleGroup: this.name,
             id: "young-package",
             severity,
-            title: `pacchetto molto recente: ${depName}`,
+            title: `very recent package: ${depName}`,
             description:
-              `Il pacchetto "${depName}" e' stato pubblicato solo ${formatAge(ageInfo.ageInDays)} fa ` +
-              `(${ageInfo.publishedAt}). I pacchetti appena creati usati come dipendenze ` +
-              `di progetti affermati sono un forte indicatore di attacco supply-chain.`,
+              `The package "${depName}" was published only ${formatAge(ageInfo.ageInDays)} ago ` +
+              `(${ageInfo.publishedAt}). Newly created packages used as dependencies ` +
+              `of established projects are a strong indicator of a supply-chain attack.`,
           });
         }
       }
     }
 
-    // 3. Combinazione esplosiva: nuova dipendenza + giovane
+    // 3. Explosive combination: new dependency + young
     if (analysis.newDependencies && analysis.packageAges) {
       for (const dep of analysis.newDependencies) {
         const age = analysis.packageAges[dep.name];
@@ -86,18 +86,18 @@ class DependencyRiskRule extends BaseRule {
             ruleGroup: this.name,
             id: "injected-young-dependency",
             severity: "critical",
-            title: `dipendenza iniettata e appena creata: ${dep.name}`,
+            title: `injected and newly created dependency: ${dep.name}`,
             description:
-              `ALTO RISCHIO: "${dep.name}" e' una dipendenza nuova (non presente nella versione ` +
-              `precedente) E il pacchetto e' stato creato solo ${formatAge(age.ageInDays)} fa. ` +
-              `Questo e' il pattern esatto dell'attacco supply-chain ad axios (marzo 2026): ` +
-              `account compromesso -> dipendenza malevola iniettata -> RAT installato via postinstall.`,
+              `HIGH RISK: "${dep.name}" is a new dependency (not present in the previous ` +
+              `version) AND the package was created only ${formatAge(age.ageInDays)} ago. ` +
+              `This is the exact pattern of the axios supply-chain attack (March 2026): ` +
+              `compromised account -> malicious dependency injected -> RAT installed via postinstall.`,
           });
         }
       }
     }
 
-    // 4. Nomi sospetti (prefisso/suffisso di librerie note)
+    // 4. Suspicious names (prefix/suffix of well-known libraries)
     if (analysis.newDependencies) {
       for (const dep of analysis.newDependencies) {
         const suspicious = detectSuspiciousName(dep.name);
@@ -106,7 +106,7 @@ class DependencyRiskRule extends BaseRule {
             ruleGroup: this.name,
             id: "suspicious-name",
             severity: "high",
-            title: `nome sospetto: ${dep.name}`,
+            title: `suspicious name: ${dep.name}`,
             description: suspicious,
           });
         }
@@ -118,10 +118,10 @@ class DependencyRiskRule extends BaseRule {
 }
 
 /**
- * Controlla se un nome di pacchetto imita una libreria nota
+ * Checks if a package name mimics a well-known library
  */
 function detectSuspiciousName(name) {
-  // Librerie note che vengono spesso imitate
+  // Well-known libraries that are often imitated
   const wellKnown = [
     "crypto-js", "lodash", "express", "axios", "react", "vue",
     "angular", "moment", "chalk", "commander", "inquirer", "request",
@@ -129,7 +129,7 @@ function detectSuspiciousName(name) {
     "async", "bluebird", "cheerio", "passport", "mongoose", "sequelize",
   ];
 
-  // Prefissi/suffissi sospetti aggiunti a nomi noti
+  // Suspicious prefixes/suffixes added to well-known names
   const suspiciousPrefixes = ["plain-", "simple-", "fast-", "lite-", "mini-", "pure-", "real-", "true-", "safe-", "my-"];
   const suspiciousSuffixes = ["-js", "-lib", "-util", "-helper", "-core", "-plus", "-pro", "-new"];
 
@@ -137,16 +137,16 @@ function detectSuspiciousName(name) {
     for (const prefix of suspiciousPrefixes) {
       if (name === prefix + lib) {
         return (
-          `Il nome "${name}" sembra una copia di "${lib}" con il prefisso "${prefix}". ` +
-          `Questo pattern e' tipico del typosquatting (es. "plain-crypto-js" usato nell'attacco ad axios).`
+          `The name "${name}" looks like a copy of "${lib}" with the prefix "${prefix}". ` +
+          `This pattern is typical of typosquatting (e.g. "plain-crypto-js" used in the axios attack).`
         );
       }
     }
     for (const suffix of suspiciousSuffixes) {
       if (name === lib + suffix) {
         return (
-          `Il nome "${name}" sembra una copia di "${lib}" con il suffisso "${suffix}". ` +
-          `Potrebbe essere un tentativo di typosquatting.`
+          `The name "${name}" looks like a copy of "${lib}" with the suffix "${suffix}". ` +
+          `This could be a typosquatting attempt.`
         );
       }
     }
@@ -156,15 +156,15 @@ function detectSuspiciousName(name) {
 }
 
 /**
- * Formatta l'eta' in modo leggibile
+ * Formats age in a human-readable way
  */
 function formatAge(days) {
   if (days < 1) {
     const hours = Math.round(days * 24);
-    return hours <= 1 ? "meno di un'ora" : `${hours} ore`;
+    return hours <= 1 ? "less than an hour" : `${hours} hours`;
   }
-  if (days < 2) return "1 giorno";
-  return `${Math.round(days)} giorni`;
+  if (days < 2) return "1 day";
+  return `${Math.round(days)} days`;
 }
 
 module.exports = { DependencyRiskRule, detectSuspiciousName, formatAge };

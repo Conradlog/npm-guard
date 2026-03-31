@@ -6,7 +6,7 @@ class FileSystemRule extends BaseRule {
   }
 
   get description() {
-    return "Rileva operazioni sospette sul file system";
+    return "Detects suspicious file system operations";
   }
 
   get patterns() {
@@ -15,57 +15,57 @@ class FileSystemRule extends BaseRule {
         pattern: /\/etc\/passwd/,
         id: "etc-passwd",
         severity: "critical",
-        title: "accesso /etc/passwd",
-        description: "Legge la lista degli utenti del sistema",
+        title: "access to /etc/passwd",
+        description: "Reads the system user list",
       },
       {
         pattern: /\/etc\/shadow/,
         id: "etc-shadow",
         severity: "critical",
-        title: "accesso /etc/shadow",
-        description: "Tenta di leggere le password cifrate del sistema",
+        title: "access to /etc/shadow",
+        description: "Attempts to read the system's encrypted passwords",
       },
       {
         pattern: /~\/\.ssh/,
         id: "ssh-keys",
         severity: "critical",
-        title: "accesso chiavi SSH",
-        description: "Accede alle tue chiavi SSH (usate per connettersi a server)",
+        title: "access to SSH keys",
+        description: "Accesses your SSH keys (used to connect to servers)",
       },
       {
         pattern: /~\/\.npm/,
         id: "npm-config",
         severity: "high",
-        title: "accesso config npm",
-        description: "Accede alla configurazione di npm",
+        title: "access to npm config",
+        description: "Accesses the npm configuration",
       },
       {
         pattern: /\.npmrc/,
         id: "npmrc",
         severity: "critical",
-        title: "accesso .npmrc (token)",
-        description: "Accede al file con i tuoi TOKEN npm (credenziali di accesso!)",
+        title: "access to .npmrc (token)",
+        description: "Accesses the file containing your npm TOKENs (access credentials!)",
       },
       {
         pattern: /~\/\.aws/,
         id: "aws-credentials",
         severity: "critical",
-        title: "accesso credenziali AWS",
-        description: "Accede alle tue credenziali Amazon Web Services",
+        title: "access to AWS credentials",
+        description: "Accesses your Amazon Web Services credentials",
       },
       {
         pattern: /~\/\.env/,
         id: "dotenv",
         severity: "critical",
-        title: "accesso file .env",
-        description: "Accede al file con le variabili d'ambiente (spesso contiene segreti)",
+        title: "access to .env file",
+        description: "Accesses the environment variables file (often contains secrets)",
       },
       {
         pattern: /process\.env/,
         id: "process-env",
         severity: "high",
-        title: "accesso variabili d'ambiente",
-        description: "Legge le impostazioni segrete del tuo sistema (password, token, ecc.)",
+        title: "access to environment variables",
+        description: "Reads your system's secret settings (passwords, tokens, etc.)",
       },
     ];
   }

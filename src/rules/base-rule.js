@@ -16,7 +16,7 @@
  * @example
  * class MyRule extends BaseRule {
  *   get name() { return "my-rule"; }
- *   get description() { return "Controlla qualcosa di specifico"; }
+ *   get description() { return "Checks for something specific"; }
  *   get patterns() {
  *     return [
  *       {
@@ -24,7 +24,7 @@
  *         id: "dangerous-cmd",
  *         severity: "high",
  *         title: "Comando pericoloso",
- *         description: "Questo comando puo' fare X e Y"
+ *         description: "This command can do X and Y"
  *       }
  *     ];
  *   }
@@ -35,21 +35,21 @@ class BaseRule {
    * @returns {string} Identificativo univoco della regola
    */
   get name() {
-    throw new Error("Le regole devono implementare il getter 'name'");
+    throw new Error("Rules must implement the 'name' getter");
   }
 
   /**
    * @returns {string} Descrizione della regola
    */
   get description() {
-    throw new Error("Le regole devono implementare il getter 'description'");
+    throw new Error("Rules must implement the 'description' getter");
   }
 
   /**
    * @returns {Array<{pattern: RegExp, id: string, severity: string, title: string, description: string}>}
    */
   get patterns() {
-    throw new Error("Le regole devono implementare il getter 'patterns'");
+    throw new Error("Rules must implement the 'patterns' getter");
   }
 
   /**

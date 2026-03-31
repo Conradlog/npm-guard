@@ -1,9 +1,9 @@
 const { BaseRule } = require("./base-rule");
 
 /**
- * Regola avanzata con logica personalizzata.
- * Dimostra come sovrascrivere il metodo `analyze` per aggiungere
- * logica di analisi oltre ai semplici pattern matching.
+ * Advanced rule with custom logic.
+ * Demonstrates how to override the `analyze` method to add
+ * analysis logic beyond simple pattern matching.
  */
 class SensitiveFilesRule extends BaseRule {
   get name() {
@@ -11,7 +11,7 @@ class SensitiveFilesRule extends BaseRule {
   }
 
   get description() {
-    return "Rileva accesso a file sensibili e tentativi di esfiltrazione dati";
+    return "Detects access to sensitive files and data exfiltration attempts";
   }
 
   get patterns() {
@@ -20,47 +20,47 @@ class SensitiveFilesRule extends BaseRule {
         pattern: /\.pem\b/,
         id: "pem-file",
         severity: "critical",
-        title: "accesso file .pem (certificato)",
-        description: "Accede a file di certificato/chiave privata",
+        title: "access to .pem file (certificate)",
+        description: "Accesses certificate/private key files",
       },
       {
         pattern: /\.key\b/,
         id: "key-file",
         severity: "critical",
-        title: "accesso file .key (chiave privata)",
-        description: "Accede a file di chiave privata",
+        title: "access to .key file (private key)",
+        description: "Accesses private key files",
       },
       {
         pattern: /id_rsa/,
         id: "id-rsa",
         severity: "critical",
-        title: "accesso chiave RSA",
-        description: "Accede alla chiave privata RSA (autenticazione SSH)",
+        title: "access to RSA key",
+        description: "Accesses the RSA private key (SSH authentication)",
       },
       {
         pattern: /\.kube\/config/,
         id: "kube-config",
         severity: "critical",
-        title: "accesso config Kubernetes",
-        description: "Accede alla configurazione dei cluster Kubernetes",
+        title: "access to Kubernetes config",
+        description: "Accesses the Kubernetes cluster configuration",
       },
       {
         pattern: /\.docker\/config/,
         id: "docker-config",
         severity: "high",
-        title: "accesso config Docker",
-        description: "Accede alla configurazione Docker (potrebbe contenere credenziali registry)",
+        title: "access to Docker config",
+        description: "Accesses the Docker configuration (may contain registry credentials)",
       },
     ];
   }
 
   /**
-   * Logica di analisi avanzata: controlla anche combinazioni sospette
+   * Advanced analysis logic: also checks for suspicious combinations
    */
   analyze(command, context = {}) {
     const matches = super.analyze(command, context);
 
-    // Combinazione pericolosa: lettura file + invio rete
+    // Dangerous combination: file read + network send
     const readsFile = /\bcat\b|\bread\b|\bhead\b|\btail\b/.test(command);
     const sendsData = /\bcurl\b|\bwget\b|\bnc\b/.test(command);
 
@@ -69,9 +69,9 @@ class SensitiveFilesRule extends BaseRule {
         ruleGroup: this.name,
         id: "data-exfiltration",
         severity: "critical",
-        title: "possibile esfiltrazione dati",
+        title: "possible data exfiltration",
         description:
-          "Il comando legge un file E lo invia via rete - potrebbe rubare dati dal tuo computer",
+          "The command reads a file AND sends it over the network - could be stealing data from your computer",
       });
     }
 

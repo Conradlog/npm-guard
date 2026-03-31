@@ -128,7 +128,7 @@ test("formatDeepResults produce output text non vuoto", () => {
   const output = engine.formatDeepResults([deepResult], { format: "text" });
   assert(typeof output === "string");
   assert(output.length > 0);
-  assert(output.includes("SCANSIONE PROFONDA"));
+  assert(output.includes("DEEP SCAN"));
 });
 
 // ─── formatDeepResults HTML ───

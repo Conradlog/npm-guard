@@ -41,12 +41,12 @@ switch (command) {
     runInteractive(parseFlags(args));
     break;
   default:
-    // Retrocompatibilita': se il primo arg non e' un subcommand, trattalo come pacchetto
+    // Backward compatibility: if the first arg is not a subcommand, treat it as a package
     if (command.startsWith("-")) {
-      // E' un flag: usa la vecchia logica diretta
+      // It's a flag: use the old direct logic
       runLegacyDirect(args);
     } else {
-      // E' un nome pacchetto: scansionalo
+      // It's a package name: scan it
       runCheck(args);
     }
     break;
@@ -61,14 +61,14 @@ function runCheck(args) {
   const deep = args.includes("--deep");
 
   if (packages.length === 0) {
-    console.error(chalk.red("Specificare almeno un pacchetto. Esempio: npm-guard check express"));
+    console.error(chalk.red("Specify at least one package. Example: npm-guard check express"));
     process.exit(1);
   }
 
   const engine = new NpmGuardEngine(flags);
 
   if (deep) {
-    // Scansione profonda: analizza pacchetto + tutte le dipendenze transitive
+    // Deep scan: analyze package + all transitive dependencies
     const allResults = [];
     const allDeepResults = [];
 
@@ -76,14 +76,14 @@ function runCheck(args) {
 
     for (const pkg of packages) {
       if (isTextOutput) {
-        console.log(chalk.cyan(`\n  Scansione profonda di ${chalk.bold(pkg)}...`));
-        console.log(chalk.gray("  Analisi dipendenze transitive, confronto versioni, controllo eta'...\n"));
+        console.log(chalk.cyan(`\n  Deep scanning ${chalk.bold(pkg)}...`));
+        console.log(chalk.gray("  Analyzing transitive dependencies, comparing versions, checking age...\n"));
       }
 
       const deepResult = engine.scanPackageDeep(pkg, {
         onProgress: (type, name, current, total) => {
           if (isTextOutput && type === "dep") {
-            process.stderr.write(chalk.gray(`\r  Scansione dipendenza ${current + 1}/${total}: ${name}      `));
+            process.stderr.write(chalk.gray(`\r  Scanning dependency ${current + 1}/${total}: ${name}      `));
           }
         },
       });
@@ -97,11 +97,11 @@ function runCheck(args) {
       allResults.push(...deepResult.dependencies.filter((d) => d.risk && d.risk.score > 0));
     }
 
-    // Output formattato
+    // Formatted output
     const output = engine.formatDeepResults(allDeepResults, { format: flags.format });
     console.log(output);
 
-    // Exit code basato sul rischio aggregato (rispetta --fail-on)
+    // Exit code based on aggregated risk (respects --fail-on)
     const deepFailed = allDeepResults.some((dr) => {
       if (!dr.aggregatedRisk) return false;
       return engine.shouldFail([{ risk: dr.aggregatedRisk }]);
@@ -122,11 +122,11 @@ function runScan(args) {
   const positional = args.filter((a) => !a.startsWith("-"));
   const projectPath = path.resolve(positional[0] || process.cwd());
 
-  // Supporta anche --installed per retrocompatibilita'
+  // Also supports --installed for backward compatibility
   if (args.includes("--installed")) {
     const packages = positional;
     if (packages.length === 0) {
-      console.error("Specificare almeno un pacchetto");
+      console.error("Specify at least one package");
       process.exit(1);
     }
     const engine = new NpmGuardEngine(flags);
@@ -139,7 +139,7 @@ function runScan(args) {
   const engine = new NpmGuardEngine(flags, projectPath);
 
   if (flags.format !== "json") {
-    console.log(chalk.gray(`\n  Scansione dipendenze in: ${projectPath}\n`));
+    console.log(chalk.gray(`\n  Scanning dependencies in: ${projectPath}\n`));
   }
 
   const results = engine.scanProject(projectPath);
@@ -162,38 +162,38 @@ function runScan(args) {
 function runSetup(args) {
   console.log("");
   console.log(chalk.bold.cyan("  npm-guard setup"));
-  console.log(chalk.gray("  Installa il wrapper trasparente nella tua shell."));
-  console.log(chalk.gray("  Dopo il setup, ogni 'npm install' verra' scansionato automaticamente."));
+  console.log(chalk.gray("  Install the transparent wrapper in your shell."));
+  console.log(chalk.gray("  After setup, every 'npm install' will be scanned automatically."));
   console.log("");
 
   const detected = wrapper.detectShell();
-  console.log(`  Shell rilevata:  ${chalk.bold(detected.shell)}`);
-  console.log(`  File config:     ${chalk.bold(detected.rcFile)}`);
+  console.log(`  Detected shell:  ${chalk.bold(detected.shell)}`);
+  console.log(`  Config file:     ${chalk.bold(detected.rcFile)}`);
   console.log("");
 
   const result = wrapper.install();
 
   if (!result.success) {
-    if (result.error.includes("gia' installato")) {
+    if (result.error.includes("already installed")) {
       console.log(chalk.yellow(`  ${result.error}`));
-      console.log(chalk.gray("  Per reinstallare, esegui prima: npm-guard uninstall"));
+      console.log(chalk.gray("  To reinstall, first run: npm-guard uninstall"));
     } else {
-      console.log(chalk.red(`  Errore: ${result.error}`));
+      console.log(chalk.red(`  Error: ${result.error}`));
     }
     process.exit(1);
   }
 
   if (result.backupFile) {
-    console.log(chalk.green(`  ✓ Backup creato: ${result.backupFile}`));
+    console.log(chalk.green(`  ✓ Backup created: ${result.backupFile}`));
   }
-  console.log(chalk.green(`  ✓ Wrapper installato in: ${result.rcFile}`));
+  console.log(chalk.green(`  ✓ Wrapper installed in: ${result.rcFile}`));
   console.log("");
-  console.log(chalk.bold("  Per attivarlo, esegui:"));
+  console.log(chalk.bold("  To activate it, run:"));
   console.log(chalk.cyan(`    source ${result.rcFile}`));
   console.log("");
-  console.log(chalk.gray("  Oppure riapri il terminale."));
-  console.log(chalk.gray("  Da ora ogni 'npm install <pacchetto>' verra' controllato automaticamente."));
-  console.log(chalk.gray("  Per disabilitare: npm-guard uninstall"));
+  console.log(chalk.gray("  Or reopen the terminal."));
+  console.log(chalk.gray("  From now on, every 'npm install <package>' will be checked automatically."));
+  console.log(chalk.gray("  To disable: npm-guard uninstall"));
   console.log("");
 }
 
@@ -204,12 +204,12 @@ function runUninstall() {
   const result = wrapper.uninstall();
 
   if (!result.success) {
-    console.log(chalk.red(`  Errore: ${result.error}`));
+    console.log(chalk.red(`  Error: ${result.error}`));
     process.exit(1);
   }
 
-  console.log(chalk.green(`\n  ✓ Wrapper rimosso da: ${result.rcFile}`));
-  console.log(chalk.gray("  Riapri il terminale per completare la disattivazione.\n"));
+  console.log(chalk.green(`\n  ✓ Wrapper removed from: ${result.rcFile}`));
+  console.log(chalk.gray("  Reopen the terminal to complete the deactivation.\n"));
 }
 
 // ═══════════════════════════════════════════
@@ -222,21 +222,21 @@ function runStatus() {
   console.log("");
   console.log(chalk.bold.cyan("  npm-guard status"));
   console.log("");
-  console.log(`  Versione:     ${chalk.bold("v" + pkg.version)}`);
+  console.log(`  Version:      ${chalk.bold("v" + pkg.version)}`);
   console.log(`  Shell:        ${chalk.bold(wrapperStatus.shell)}`);
-  console.log(`  File config:  ${chalk.bold(wrapperStatus.rcFile)}`);
+  console.log(`  Config file:  ${chalk.bold(wrapperStatus.rcFile)}`);
   console.log(
-    `  Wrapper:      ${wrapperStatus.installed ? chalk.green.bold("ATTIVO") : chalk.yellow("NON INSTALLATO")}`
+    `  Wrapper:      ${wrapperStatus.installed ? chalk.green.bold("ACTIVE") : chalk.yellow("NOT INSTALLED")}`
   );
 
   if (!wrapperStatus.installed) {
-    console.log(chalk.gray("\n  Per attivare il wrapper: npm-guard setup"));
+    console.log(chalk.gray("\n  To activate the wrapper: npm-guard setup"));
   }
   console.log("");
 }
 
 // ═══════════════════════════════════════════
-//  LEGACY: vecchia modalita' diretta (--scan, --installed)
+//  LEGACY: old direct mode (--scan, --installed)
 // ═══════════════════════════════════════════
 function runLegacyDirect(args) {
   const flags = parseFlags(args);
@@ -294,51 +294,51 @@ function showVersion() {
 
 function showHelp() {
   console.log(`
-  ${chalk.bold.cyan("npm-guard")} - Proteggi il tuo PC dai pacchetti npm pericolosi
+  ${chalk.bold.cyan("npm-guard")} - Protect your PC from dangerous npm packages
 
-  ${chalk.bold("COMANDI:")}
-    npm-guard                        Modalita' interattiva guidata
-    npm-guard check <pkg...>         Scansiona pacchetti prima di installarli
-    npm-guard scan [path]            Scansiona le dipendenze di un progetto
-    npm-guard setup                  Installa il wrapper trasparente (npm auto-guard)
-    npm-guard uninstall              Rimuove il wrapper dalla shell
-    npm-guard status                 Mostra lo stato corrente
+  ${chalk.bold("COMMANDS:")}
+    npm-guard                        Guided interactive mode
+    npm-guard check <pkg...>         Scan packages before installing them
+    npm-guard scan [path]            Scan the dependencies of a project
+    npm-guard setup                  Install the transparent wrapper (npm auto-guard)
+    npm-guard uninstall              Remove the wrapper from the shell
+    npm-guard status                 Show the current status
 
-  ${chalk.bold("MODALITA' CHECK (AI / CI / Umani):")}
-    npm-guard check express          Controlla un pacchetto
-    npm-guard check lodash axios     Controlla piu' pacchetti
-    npm-guard check express --json   Output JSON (per agenti IA e CI/CD)
-    npm-guard check express --html   Output HTML (per report)
-    npm-guard check axios --deep     Scansione profonda (dipendenze transitive)
+  ${chalk.bold("CHECK MODE (AI / CI / Humans):")}
+    npm-guard check express          Check a package
+    npm-guard check lodash axios     Check multiple packages
+    npm-guard check express --json   JSON output (for AI agents and CI/CD)
+    npm-guard check express --html   HTML output (for reports)
+    npm-guard check axios --deep     Deep scan (transitive dependencies)
 
-  ${chalk.bold("MODALITA' SCAN:")}
-    npm-guard scan                   Scansiona il progetto corrente
-    npm-guard scan /percorso         Scansiona un progetto specifico
-    npm-guard scan --json            Output JSON per CI/CD
+  ${chalk.bold("SCAN MODE:")}
+    npm-guard scan                   Scan the current project
+    npm-guard scan /path             Scan a specific project
+    npm-guard scan --json            JSON output for CI/CD
 
-  ${chalk.bold("OPZIONI:")}
-    --json                           Output JSON (machine-readable)
-    --html                           Output HTML (report visivo)
-    --deep                           Scansione profonda: analizza dipendenze
-                                     transitive, confronta versioni, controlla
-                                     eta' pacchetti (anti supply-chain attack)
-    --format <text|json|html>        Formato di output
-    --fail-on <level>                Exit code 1 se rischio >= level
+  ${chalk.bold("OPTIONS:")}
+    --json                           JSON output (machine-readable)
+    --html                           HTML output (visual report)
+    --deep                           Deep scan: analyze transitive
+                                     dependencies, compare versions, check
+                                     package age (anti supply-chain attack)
+    --format <text|json|html>        Output format
+    --fail-on <level>                Exit code 1 if risk >= level
                                      (low, medium, high, critical)
-    -v, --version                    Mostra la versione
-    -h, --help                       Mostra questo messaggio
+    -v, --version                    Show the version
+    -h, --help                       Show this message
 
-  ${chalk.bold("WRAPPER TRASPARENTE:")}
-    Dopo aver eseguito ${chalk.cyan("npm-guard setup")}, ogni volta che fai
-    'npm install <pacchetto>', npm-guard lo scansiona automaticamente.
-    Se trova minacce, blocca l'installazione e ti avvisa.
+  ${chalk.bold("TRANSPARENT WRAPPER:")}
+    After running ${chalk.cyan("npm-guard setup")}, every time you run
+    'npm install <package>', npm-guard scans it automatically.
+    If threats are found, it blocks the installation and warns you.
 
-  ${chalk.bold("USO CON AGENTI IA:")}
-    Gli agenti IA devono usare: npm-guard check <pkg> --json
-    Il campo "summary.maxRiskLevel" nel JSON indica il verdetto.
-    Vedi ${chalk.cyan("AI_INSTRUCTIONS.md")} per le istruzioni complete.
+  ${chalk.bold("USAGE WITH AI AGENTS:")}
+    AI agents should use: npm-guard check <pkg> --json
+    The "summary.maxRiskLevel" field in the JSON indicates the verdict.
+    See ${chalk.cyan("AI_INSTRUCTIONS.md")} for complete instructions.
 
-  ${chalk.bold("USO IN CI/CD:")}
+  ${chalk.bold("USAGE IN CI/CD:")}
     npm-guard scan --json --fail-on high
 `);
   process.exit(0);

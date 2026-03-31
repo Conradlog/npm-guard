@@ -52,7 +52,7 @@ test("install in file vuoto", () => {
 test("install rileva wrapper gia' installato", () => {
   const result = install(testRcFile);
   assert(result.success === false, "Non dovrebbe reinstallare");
-  assert(result.error.includes("gia' installato"), "Dovrebbe dire che e' gia' installato");
+  assert(result.error.includes("already installed"), "Should say it's already installed");
 });
 
 // ─── isInstalled ───
@@ -86,7 +86,7 @@ test("uninstall rimuove il wrapper", () => {
 test("uninstall su file senza wrapper da errore", () => {
   const result = uninstall(testRcFile);
   assert(result.success === false, "Dovrebbe fallire");
-  assert(result.error.includes("non trovato"), "Dovrebbe dire che non e' trovato");
+  assert(result.error.includes("not found"), "Should say it's not found");
 });
 
 test("uninstall su file inesistente da errore", () => {

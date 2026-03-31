@@ -14,23 +14,23 @@ const RISK_COLORS = {
 };
 
 const RISK_EXPLANATIONS = {
-  SICURO: "Nessun comando sospetto durante l'installazione. Puoi installarlo tranquillamente.",
-  BASSO: "Comandi minimi durante l'installazione. Rischio molto basso.",
-  MEDIO: "Alcuni comandi da verificare durante l'installazione.",
-  ALTO: "Comandi potenzialmente pericolosi. Valuta se ti fidi dell'autore.",
-  CRITICO: "ATTENZIONE! Comandi molto sospetti. Potrebbe essere malevolo!",
+  SICURO: "No suspicious commands during installation. You can install it safely.",
+  BASSO: "Minimal commands during installation. Very low risk.",
+  MEDIO: "Some commands to review during installation.",
+  ALTO: "Potentially dangerous commands. Consider whether you trust the author.",
+  CRITICO: "WARNING! Very suspicious commands. Could be malicious!",
 };
 
 const HOOK_EXPLANATIONS = {
-  preinstall: "PRIMA dell'installazione",
-  install: "DURANTE l'installazione",
-  postinstall: "DOPO l'installazione",
-  preuninstall: "PRIMA della disinstallazione",
-  postuninstall: "DOPO la disinstallazione",
-  prepublish: "Prima della pubblicazione",
-  preprepare: "Prima della preparazione",
-  prepare: "Durante la preparazione",
-  postprepare: "Dopo la preparazione",
+  preinstall: "BEFORE installation",
+  install: "DURING installation",
+  postinstall: "AFTER installation",
+  preuninstall: "BEFORE uninstallation",
+  postuninstall: "AFTER uninstallation",
+  prepublish: "Before publishing",
+  preprepare: "Before preparation",
+  prepare: "During preparation",
+  postprepare: "After preparation",
 };
 
 /**
@@ -55,16 +55,16 @@ function format(results, options = {}) {
     const riskColor = RISK_COLORS[result.risk.color] || chalk.white;
     const riskIcon =
       result.risk.score <= 10
-        ? chalk.yellow("⚠ ATTENZIONE")
-        : chalk.red("✗ PERICOLO");
+        ? chalk.yellow("⚠ WARNING")
+        : chalk.red("✗ DANGER");
 
     lines.push("");
     lines.push(chalk.bold("  ┌─────────────────────────────────────────────────"));
     lines.push(
-      chalk.bold(`  │  ${result.name}`) + chalk.gray(` versione ${result.version}`)
+      chalk.bold(`  │  ${result.name}`) + chalk.gray(` version ${result.version}`)
     );
     lines.push(
-      `  │  Verdetto: ${riskIcon}   Punteggio: ${riskColor(result.risk.level)} (${result.risk.score}/100)`
+      `  │  Verdict: ${riskIcon}   Score: ${riskColor(result.risk.level)} (${result.risk.score}/100)`
     );
     lines.push(chalk.bold("  └─────────────────────────────────────────────────"));
 
@@ -74,11 +74,11 @@ function format(results, options = {}) {
     lines.push("");
     for (const finding of result.findings) {
       const hookExpl = HOOK_EXPLANATIONS[finding.hook] || finding.hook;
-      lines.push(chalk.cyan(`  Quando: ${hookExpl}`));
-      lines.push(chalk.gray(`  Comando: ${finding.command}`));
+      lines.push(chalk.cyan(`  When: ${hookExpl}`));
+      lines.push(chalk.gray(`  Command: ${finding.command}`));
 
       if (finding.isSafe) {
-        lines.push(chalk.green("  -> Riconosciuto come sicuro (build tool)\n"));
+        lines.push(chalk.green("  -> Recognized as safe (build tool)\n"));
         continue;
       }
 
@@ -93,7 +93,7 @@ function format(results, options = {}) {
   // Pacchetti sicuri
   if (safe.length > 0) {
     lines.push("");
-    lines.push(chalk.green.bold(`  ✓ ${safe.length} pacchett${safe.length === 1 ? "o sicuro" : "i sicuri"}:`));
+    lines.push(chalk.green.bold(`  ✓ ${safe.length} safe package${safe.length === 1 ? "" : "s"}:`));
     for (const r of safe) {
       lines.push(chalk.green(`    ✓ ${r.name}@${r.version}`));
     }
@@ -102,31 +102,31 @@ function format(results, options = {}) {
   // Riepilogo
   lines.push("");
   lines.push(chalk.bold("  ════════════════════════════════"));
-  lines.push(chalk.bold("           RIEPILOGO"));
+  lines.push(chalk.bold("           SUMMARY"));
   lines.push(chalk.bold("  ════════════════════════════════"));
-  lines.push(`  Pacchetti analizzati:  ${chalk.bold(results.length - errors.length)}`);
-  lines.push(`  Sicuri:                ${chalk.green.bold(safe.length)}`);
+  lines.push(`  Packages analyzed:     ${chalk.bold(results.length - errors.length)}`);
+  lines.push(`  Safe:                  ${chalk.green.bold(safe.length)}`);
   lines.push(
-    `  Con problemi:          ${suspicious.length > 0 ? chalk.red.bold(suspicious.length) : chalk.green.bold("0")}`
+    `  With issues:           ${suspicious.length > 0 ? chalk.red.bold(suspicious.length) : chalk.green.bold("0")}`
   );
 
   const critical = results.filter((r) => r.risk && r.risk.level === "CRITICO");
   if (critical.length > 0) {
     lines.push("");
     lines.push(chalk.bgRed.white.bold("  ╔═══════════════════════════════════════════════════╗"));
-    lines.push(chalk.bgRed.white.bold("  ║  ATTENZIONE: Trovati pacchetti MOLTO pericolosi!  ║"));
+    lines.push(chalk.bgRed.white.bold("  ║  WARNING: Found VERY dangerous packages!          ║"));
     lines.push(chalk.bgRed.white.bold("  ╚═══════════════════════════════════════════════════╝"));
     lines.push("");
-    lines.push(chalk.red("  Cosa fare:"));
-    lines.push(chalk.red("  1. NON installare questi pacchetti"));
-    lines.push(chalk.red("  2. Cerca alternative sicure su npmjs.com"));
-    lines.push(chalk.red("  3. Se li conosci e ti fidi dell'autore, procedi con cautela"));
+    lines.push(chalk.red("  What to do:"));
+    lines.push(chalk.red("  1. DO NOT install these packages"));
+    lines.push(chalk.red("  2. Look for safe alternatives on npmjs.com"));
+    lines.push(chalk.red("  3. If you know and trust the author, proceed with caution"));
   } else if (suspicious.length > 0) {
     lines.push("");
-    lines.push(chalk.yellow("  Verifica i dettagli sopra prima di procedere."));
+    lines.push(chalk.yellow("  Review the details above before proceeding."));
   } else if (safe.length > 0) {
     lines.push("");
-    lines.push(chalk.green.bold("  Tutto ok! Puoi procedere con l'installazione."));
+    lines.push(chalk.green.bold("  All clear! You can proceed with the installation."));
   }
 
   lines.push("");

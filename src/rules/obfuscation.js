@@ -1,8 +1,8 @@
 const { BaseRule } = require("./base-rule");
 
 /**
- * Regola avanzata: rileva offuscamento, percorsi sospetti, e pattern
- * di attacco supply-chain noti. Usa logica combinata oltre al regex.
+ * Advanced rule: detects obfuscation, suspicious paths, and known
+ * supply-chain attack patterns. Uses combinatorial logic beyond regex.
  */
 class ObfuscationRule extends BaseRule {
   get name() {
@@ -10,106 +10,106 @@ class ObfuscationRule extends BaseRule {
   }
 
   get description() {
-    return "Rileva codice offuscato, percorsi sospetti e pattern di attacco supply-chain";
+    return "Detects obfuscated code, suspicious paths, and supply-chain attack patterns";
   }
 
   get patterns() {
     return [
-      // ─── Percorsi sospetti ───
+      // ─── Suspicious paths ───
       {
         pattern: /\/tmp\//,
         id: "tmp-path",
         severity: "high",
-        title: "percorso /tmp",
-        description: "Usa la cartella temporanea del sistema - spesso usata per nascondere file malevoli",
+        title: "/tmp path",
+        description: "Uses the system's temporary folder - often used to hide malicious files",
       },
       {
         pattern: /\/dev\/tcp\//,
         id: "dev-tcp",
         severity: "critical",
         title: "/dev/tcp (reverse shell)",
-        description: "Apre una connessione di rete via /dev/tcp - tecnica classica di reverse shell",
+        description: "Opens a network connection via /dev/tcp - classic reverse shell technique",
       },
       {
         pattern: /\/dev\/udp\//,
         id: "dev-udp",
         severity: "critical",
-        title: "/dev/udp (connessione UDP)",
-        description: "Apre una connessione UDP nascosta via /dev/udp",
+        title: "/dev/udp (UDP connection)",
+        description: "Opens a hidden UDP connection via /dev/udp",
       },
       {
         pattern: /\/dev\/null/,
         id: "dev-null-redirect",
         severity: "medium",
-        title: "redirect a /dev/null",
-        description: "Nasconde l'output di un comando - potrebbe mascherare attivita' malevola",
+        title: "redirect to /dev/null",
+        description: "Hides command output - could be masking malicious activity",
       },
 
-      // ─── Offuscamento stringhe ───
+      // ─── String obfuscation ───
       {
         pattern: /\\x[0-9a-f]{2}(?:\\x[0-9a-f]{2}){3,}/i,
         id: "hex-string",
         severity: "critical",
-        title: "stringa esadecimale lunga",
-        description: "Contiene codice offuscato in esadecimale - impossibile leggere cosa fa",
+        title: "long hex string",
+        description: "Contains hex-obfuscated code - impossible to read what it does",
       },
       {
         pattern: /\\u[0-9a-f]{4}(?:\\u[0-9a-f]{4}){3,}/i,
         id: "unicode-escape",
         severity: "critical",
-        title: "sequenza Unicode offuscata",
-        description: "Contiene testo mascherato con escape Unicode",
+        title: "obfuscated Unicode sequence",
+        description: "Contains text hidden with Unicode escapes",
       },
       {
         pattern: /atob\s*\(/,
         id: "atob",
         severity: "critical",
-        title: "atob() (decodifica Base64 JS)",
-        description: "Decodifica stringhe Base64 in JavaScript - nasconde il codice reale",
+        title: "atob() (JS Base64 decode)",
+        description: "Decodes Base64 strings in JavaScript - hides the real code",
       },
       {
         pattern: /Buffer\.from\s*\([^)]+,\s*['"]base64['"]\)/,
         id: "buffer-base64",
         severity: "critical",
         title: "Buffer.from(base64)",
-        description: "Decodifica payload Base64 tramite Node.js Buffer",
+        description: "Decodes Base64 payload via Node.js Buffer",
       },
       {
         pattern: /String\.fromCharCode/,
         id: "fromcharcode",
         severity: "high",
         title: "String.fromCharCode",
-        description: "Costruisce stringhe da codici numerici - tecnica di offuscamento",
+        description: "Builds strings from character codes - obfuscation technique",
       },
 
-      // ─── Download + esecuzione silenziata ───
+      // ─── Silent download + execution ───
       {
         pattern: /curl\s[^|]*-s/,
         id: "curl-silent",
         severity: "critical",
-        title: "curl silenzioso (-s)",
-        description: "Scarica dati da internet in modalita' silenziosa - nasconde l'attivita'",
+        title: "silent curl (-s)",
+        description: "Downloads data from the internet in silent mode - hides activity",
       },
       {
         pattern: /wget\s[^|]*-q/,
         id: "wget-quiet",
         severity: "critical",
-        title: "wget silenzioso (-q)",
-        description: "Scarica file da internet senza mostrare nulla a schermo",
+        title: "quiet wget (-q)",
+        description: "Downloads files from the internet without showing any output",
       },
       {
         pattern: />\s*\/dev\/null\s*2>&1/,
         id: "silent-execution",
         severity: "critical",
-        title: "esecuzione completamente silenziata",
-        description: "Esegue un comando nascondendo TUTTO l'output - sia normale che errori",
+        title: "fully silenced execution",
+        description: "Runs a command hiding ALL output - both normal and errors",
       },
       {
         pattern: /2>&1\s*>\s*\/dev\/null/,
         id: "silent-execution-alt",
         severity: "critical",
-        title: "esecuzione completamente silenziata",
-        description: "Esegue un comando nascondendo TUTTO l'output (sintassi alternativa)",
+        title: "fully silenced execution",
+        description: "Runs a command hiding ALL output (alternative syntax)",
       },
 
       // ─── Scheduled / persistence ───
@@ -117,33 +117,33 @@ class ObfuscationRule extends BaseRule {
         pattern: /\bcrontab\b/,
         id: "crontab",
         severity: "critical",
-        title: "crontab (task schedulato)",
-        description: "Installa un'attivita' ricorrente sul sistema - puo' persistere dopo la rimozione del pacchetto",
+        title: "crontab (scheduled task)",
+        description: "Installs a recurring task on the system - can persist after package removal",
       },
       {
         pattern: /\bsystemctl\b/,
         id: "systemctl",
         severity: "critical",
-        title: "systemctl (servizio di sistema)",
-        description: "Manipola servizi di sistema - puo' installare backdoor persistenti",
+        title: "systemctl (system service)",
+        description: "Manipulates system services - can install persistent backdoors",
       },
       {
         pattern: /\blaunchctl\b/,
         id: "launchctl",
         severity: "critical",
-        title: "launchctl (servizio macOS)",
-        description: "Manipola servizi macOS - puo' installare agenti persistenti",
+        title: "launchctl (macOS service)",
+        description: "Manipulates macOS services - can install persistent agents",
       },
     ];
   }
 
   /**
-   * Analisi avanzata: rileva combinazioni sospette
+   * Advanced analysis: detects suspicious combinations
    */
   analyze(command, context = {}) {
     const matches = super.analyze(command, context);
 
-    // Download + esecuzione immediata (curl ... | sh/bash/node)
+    // Download + immediate execution (curl ... | sh/bash/node)
     const downloads = /\bcurl\b|\bwget\b/.test(command);
     const pipesExec = /\|\s*(?:sh|bash|node|python|perl|ruby)\b/.test(command);
     if (downloads && pipesExec) {
@@ -151,24 +151,24 @@ class ObfuscationRule extends BaseRule {
         ruleGroup: this.name,
         id: "download-and-execute",
         severity: "critical",
-        title: "download + esecuzione immediata",
-        description: "Scarica codice da internet e lo esegue immediatamente - attacco supply-chain classico",
+        title: "download + immediate execution",
+        description: "Downloads code from the internet and executes it immediately - classic supply-chain attack",
       });
     }
 
-    // Offuscamento pesante: troppe escape sequences
+    // Heavy obfuscation: too many escape sequences
     const escapeCount = (command.match(/\\x[0-9a-f]{2}/gi) || []).length;
     if (escapeCount >= 10) {
       matches.push({
         ruleGroup: this.name,
         id: "heavy-obfuscation",
         severity: "critical",
-        title: "offuscamento pesante",
-        description: `Trovate ${escapeCount} sequenze escape - il comando e' pesantemente offuscato`,
+        title: "heavy obfuscation",
+        description: `Found ${escapeCount} escape sequences - the command is heavily obfuscated`,
       });
     }
 
-    // Scrittura in percorso nascosto + esecuzione
+    // Write to hidden path + execute
     const writesHidden = />\s*[./]*\./.test(command);
     const executes = /&&\s*(?:sh|bash|node|chmod\s+\+x)/.test(command);
     if (writesHidden && executes) {
@@ -176,8 +176,8 @@ class ObfuscationRule extends BaseRule {
         ruleGroup: this.name,
         id: "drop-and-execute",
         severity: "critical",
-        title: "scrittura file nascosto + esecuzione",
-        description: "Scrive un file nascosto (dotfile) e poi lo esegue - pattern di dropper malware",
+        title: "hidden file write + execution",
+        description: "Writes a hidden file (dotfile) then executes it - malware dropper pattern",
       });
     }
 

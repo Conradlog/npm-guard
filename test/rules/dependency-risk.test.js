@@ -188,22 +188,22 @@ test("restituisce array vuoto con context vuoto", () => {
 
 // ─── formatAge ───
 
-test("formatAge: meno di un'ora", () => {
+test("formatAge: less than an hour", () => {
   const result = formatAge(0.02);
-  assert(result.includes("ora"), `Expected ora, got: ${result}`);
+  assert(result.includes("hour"), `Expected hour, got: ${result}`);
 });
 
-test("formatAge: poche ore", () => {
+test("formatAge: a few hours", () => {
   const result = formatAge(0.5);
-  assert(result.includes("12 ore"), `Expected 12 ore, got: ${result}`);
+  assert(result.includes("12 hours"), `Expected 12 hours, got: ${result}`);
 });
 
-test("formatAge: 1 giorno", () => {
-  assert(formatAge(1.2) === "1 giorno");
+test("formatAge: 1 day", () => {
+  assert(formatAge(1.2) === "1 day");
 });
 
-test("formatAge: piu' giorni", () => {
-  assert(formatAge(5) === "5 giorni");
+test("formatAge: multiple days", () => {
+  assert(formatAge(5) === "5 days");
 });
 
 console.log(`\n  Risultati: ${passed} passati, ${failed} falliti\n`);

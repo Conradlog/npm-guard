@@ -2,25 +2,25 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 
-// Marker per identificare il blocco iniettato
+// Marker to identify the injected block
 const MARKER_START = "# >>> npm-guard wrapper (DO NOT EDIT) >>>";
 const MARKER_END = "# <<< npm-guard wrapper <<<";
 
 /**
- * Script shell che sovrascrive il comando npm per intercettare npm install.
- * Se npm-guard e' installato globalmente, lo usa; altrimenti usa npx.
+ * Shell script that overrides the npm command to intercept npm install.
+ * If npm-guard is installed globally, it uses it; otherwise falls back to npx.
  */
 const WRAPPER_SCRIPT = `
 ${MARKER_START}
-# npm-guard: intercetta npm install per scansionare i pacchetti prima dell'installazione
+# npm-guard: intercepts npm install to scan packages before installation
 npm() {
   local cmd="\$1"
 
-  # Intercetta solo "npm install" e "npm i" (non "npm ci", "npm test", ecc.)
+  # Intercept only "npm install" and "npm i" (not "npm ci", "npm test", etc.)
   if [[ "\$cmd" == "install" || "\$cmd" == "i" ]]; then
-    shift  # Rimuove "install"/"i"
+    shift  # Remove "install"/"i"
 
-    # Separa flags (--save-dev, --global, ecc.) dai nomi pacchetto
+    # Separate flags (--save-dev, --global, etc.) from package names
     local packages=()
     local flags=()
     for arg in "\$@"; do
@@ -31,13 +31,13 @@ npm() {
       fi
     done
 
-    # Se ci sono pacchetti specifici, scansionali prima
+    # If there are specific packages, scan them first
     if [[ \${#packages[@]} -gt 0 ]]; then
       echo ""
-      echo "\\033[36m  npm-guard:\\033[0m Scansione profonda pacchetti in corso..."
+      echo "\\033[36m  npm-guard:\\033[0m Deep scanning packages..."
       echo ""
 
-      # Usa il binario globale o npx come fallback (array per evitare word-splitting)
+      # Use the global binary or npx as fallback (array to avoid word-splitting)
       local guard_cmd=()
       if command -v npm-guard &> /dev/null; then
         guard_cmd=("npm-guard")
@@ -45,30 +45,30 @@ npm() {
         guard_cmd=("npx" "--yes" "npm-guard")
       fi
 
-      # Esegui la scansione profonda con output JSON per parsing affidabile
+      # Run the deep scan with JSON output for reliable parsing
       local scan_output
       scan_output=$("\${guard_cmd[@]}" check "\${packages[@]}" --deep --json 2>/dev/null)
       local scan_exit=\$?
 
       if [[ \$scan_exit -ne 0 ]]; then
         echo ""
-        # Mostra anche l'output human-readable con scansione profonda
+        # Also show human-readable output with deep scan
         "\${guard_cmd[@]}" check "\${packages[@]}" --deep 2>/dev/null
         echo ""
-        echo "\\033[31m  npm-guard: BLOCCATO - Trovate minacce nei pacchetti!\\033[0m"
-        echo "\\033[33m  Per installare comunque: command npm \$cmd \"\${flags[@]}\" \"\${packages[@]}\"\\033[0m"
+        echo "\\033[31m  npm-guard: BLOCKED - Threats found in packages!\\033[0m"
+        echo "\\033[33m  To install anyway: command npm \$cmd \"\${flags[@]}\" \"\${packages[@]}\"\\033[0m"
         echo ""
         return 1
       else
-        echo "\\033[32m  npm-guard: Tutti i pacchetti sono sicuri.\\033[0m"
+        echo "\\033[32m  npm-guard: All packages are safe.\\033[0m"
         echo ""
       fi
     fi
 
-    # Procedi con l'installazione reale
+    # Proceed with the actual installation
     command npm "\$cmd" "\${flags[@]}" "\${packages[@]}"
   else
-    # Per tutti gli altri comandi npm, esegui normalmente
+    # For all other npm commands, run normally
     command npm "\$@"
   fi
 }
@@ -76,7 +76,7 @@ ${MARKER_END}
 `;
 
 /**
- * Rileva la shell corrente dell'utente
+ * Detect the user's current shell
  * @returns {{ shell: string, rcFile: string }}
  */
 function detectShell() {
@@ -94,8 +94,8 @@ function detectShell() {
 }
 
 /**
- * Verifica se il wrapper e' gia' installato
- * @param {string} rcFile - Percorso del file rc
+ * Check if the wrapper is already installed
+ * @param {string} rcFile - Path to the rc file
  * @returns {boolean}
  */
 function isInstalled(rcFile) {
@@ -105,8 +105,8 @@ function isInstalled(rcFile) {
 }
 
 /**
- * Installa il wrapper nella shell dell'utente
- * @param {string} rcFile - Percorso del file rc (opzionale, autodetect)
+ * Install the wrapper in the user's shell
+ * @param {string} rcFile - Path to the rc file (optional, autodetect)
  * @returns {{ success: boolean, rcFile: string, backupFile: string|null, error?: string }}
  */
 function install(rcFile) {
@@ -118,11 +118,11 @@ function install(rcFile) {
       success: false,
       rcFile,
       backupFile: null,
-      error: "Fish shell non e' ancora supportata. Usa bash o zsh.",
+      error: "Fish shell is not yet supported. Use bash or zsh.",
     };
   }
 
-  // Backup preventivo
+  // Preventive backup
   let backupFile = null;
   if (fs.existsSync(rcFile)) {
     if (isInstalled(rcFile)) {
@@ -130,22 +130,22 @@ function install(rcFile) {
         success: false,
         rcFile,
         backupFile: null,
-        error: "npm-guard wrapper e' gia' installato.",
+        error: "npm-guard wrapper is already installed.",
       };
     }
     backupFile = rcFile + ".npmguard-backup." + Date.now();
     fs.copyFileSync(rcFile, backupFile);
   }
 
-  // Appende il wrapper
+  // Append the wrapper
   fs.appendFileSync(rcFile, "\n" + WRAPPER_SCRIPT + "\n");
 
   return { success: true, rcFile, backupFile };
 }
 
 /**
- * Rimuove il wrapper dalla shell dell'utente
- * @param {string} rcFile - Percorso del file rc (opzionale, autodetect)
+ * Remove the wrapper from the user's shell
+ * @param {string} rcFile - Path to the rc file (optional, autodetect)
  * @returns {{ success: boolean, rcFile: string, error?: string }}
  */
 function uninstall(rcFile) {
@@ -153,15 +153,15 @@ function uninstall(rcFile) {
   rcFile = rcFile || detected.rcFile;
 
   if (!fs.existsSync(rcFile)) {
-    return { success: false, rcFile, error: "File non trovato: " + rcFile };
+    return { success: false, rcFile, error: "File not found: " + rcFile };
   }
 
   const content = fs.readFileSync(rcFile, "utf-8");
   if (!content.includes(MARKER_START)) {
-    return { success: false, rcFile, error: "npm-guard wrapper non trovato in " + rcFile };
+    return { success: false, rcFile, error: "npm-guard wrapper not found in " + rcFile };
   }
 
-  // Rimuovi il blocco tra i marker
+  // Remove the block between the markers
   const regex = new RegExp(
     `\\n?${escapeRegex(MARKER_START)}[\\s\\S]*?${escapeRegex(MARKER_END)}\\n?`,
     "g"
@@ -173,7 +173,7 @@ function uninstall(rcFile) {
 }
 
 /**
- * Verifica lo stato del wrapper
+ * Check the wrapper status
  * @returns {{ installed: boolean, shell: string, rcFile: string }}
  */
 function status() {

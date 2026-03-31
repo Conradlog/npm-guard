@@ -155,7 +155,7 @@ class NpmGuardEngine {
 
     const manifest = this.registry.fetch(packageName);
     if (!manifest) {
-      return { error: `Impossibile trovare il pacchetto: ${packageName}` };
+      return { error: `Unable to find package: ${packageName}` };
     }
 
     const scripts = manifest.scripts || {};
@@ -285,7 +285,7 @@ class NpmGuardEngine {
 
         analysis.packageAges[dep.name] = {
           ageInDays,
-          publishedAt: created ? created.toISOString().split("T")[0] : "sconosciuta",
+          publishedAt: created ? created.toISOString().split("T")[0] : "unknown",
           created: timestamps.created || null,
         };
       }
@@ -356,7 +356,7 @@ class NpmGuardEngine {
   scanInstalledPackage(projectPath, packageName) {
     const manifest = this.registry.fetchLocal(projectPath, packageName);
     if (!manifest) {
-      return { error: `Pacchetto non trovato in node_modules: ${packageName}` };
+      return { error: `Package not found in node_modules: ${packageName}` };
     }
 
     const scripts = manifest.scripts || {};
@@ -383,7 +383,7 @@ class NpmGuardEngine {
   scanProject(projectPath, onProgress) {
     const pkg = this.registry.fetchProjectPackage(projectPath);
     if (!pkg) {
-      return { error: "Nessun package.json trovato in questa directory" };
+      return { error: "No package.json found in this directory" };
     }
 
     const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
@@ -398,7 +398,7 @@ class NpmGuardEngine {
       if (!result.error) results.push(result);
     }
 
-    if (onProgress) onProgress(entries.length, entries.length, "Completato");
+    if (onProgress) onProgress(entries.length, entries.length, "Completed");
     return results;
   }
 
@@ -509,7 +509,7 @@ class NpmGuardEngine {
     for (const dr of deepResults) {
       lines.push("");
       lines.push(chalk.bold.cyan("  ═══════════════════════════════════════════════════"));
-      lines.push(chalk.bold.cyan("   SCANSIONE PROFONDA (deep scan)"));
+      lines.push(chalk.bold.cyan("   DEEP SCAN"));
       lines.push(chalk.bold.cyan("  ═══════════════════════════════════════════════════"));
       lines.push("");
 
@@ -519,18 +519,18 @@ class NpmGuardEngine {
         : rootRisk.level === "CRITICO" ? chalk.bgRed.white.bold
           : rootRisk.level === "ALTO" ? chalk.red.bold
             : chalk.yellow.bold;
-      lines.push(chalk.bold(`  Pacchetto: ${dr.root.name}@${dr.root.version}`) + `  ${rootRiskColor(rootRisk.level)}`);
-      lines.push(chalk.gray(`  Dipendenze analizzate: ${dr.dependencies.length}`));
+      lines.push(chalk.bold(`  Package: ${dr.root.name}@${dr.root.version}`) + `  ${rootRiskColor(rootRisk.level)}`);
+      lines.push(chalk.gray(`  Dependencies analyzed: ${dr.dependencies.length}`));
       lines.push("");
 
       // Finding del pacchetto root (script lifecycle sospetti)
       const rootSuspicious = (dr.root.findings || []).filter((f) => f.hasSuspicious);
       if (rootSuspicious.length > 0) {
-        lines.push(chalk.red.bold("  ── Script sospetti nel pacchetto root ──"));
+        lines.push(chalk.red.bold("  ── Suspicious scripts in root package ──"));
         lines.push("");
         for (const finding of rootSuspicious) {
-          lines.push(chalk.cyan(`  Quando: ${finding.hook}`));
-          lines.push(chalk.gray(`  Comando: ${finding.command}`));
+          lines.push(chalk.cyan(`  When: ${finding.hook}`));
+          lines.push(chalk.gray(`  Command: ${finding.command}`));
           for (const m of finding.matches) {
             const color = m.severity === "critical" ? chalk.bgRed.white.bold : chalk.red;
             lines.push(`    ${color(`[${m.severity.toUpperCase()}]`)} ${m.description}`);
@@ -542,26 +542,26 @@ class NpmGuardEngine {
       // Analisi dipendenze nuove
       if (dr.dependencyAnalysis && dr.dependencyAnalysis.newDependencies.length > 0) {
         lines.push(chalk.bgYellow.black.bold("  ╔═══════════════════════════════════════════════════╗"));
-        lines.push(chalk.bgYellow.black.bold("  ║  DIPENDENZE NUOVE RISPETTO ALLA VERSIONE PREC.   ║"));
+        lines.push(chalk.bgYellow.black.bold("  ║  NEW DEPENDENCIES VS. PREVIOUS VERSION            ║"));
         lines.push(chalk.bgYellow.black.bold("  ╚═══════════════════════════════════════════════════╝"));
         lines.push("");
-        lines.push(chalk.gray(`  Versione precedente: ${dr.dependencyAnalysis.previousVersion || "N/A"}`));
+        lines.push(chalk.gray(`  Previous version: ${dr.dependencyAnalysis.previousVersion || "N/A"}`));
         lines.push("");
 
         for (const dep of dr.dependencyAnalysis.newDependencies) {
           const age = dr.dependencyAnalysis.packageAges[dep.name];
           const ageStr = age
             ? age.ageInDays < 1
-              ? chalk.bgRed.white.bold(` < 24 ore `)
+              ? chalk.bgRed.white.bold(` < 24 hours `)
               : age.ageInDays < 7
-                ? chalk.red.bold(`${Math.round(age.ageInDays)} giorni`)
-                : chalk.yellow(`${Math.round(age.ageInDays)} giorni`)
-            : chalk.gray("eta' sconosciuta");
+                ? chalk.red.bold(`${Math.round(age.ageInDays)} days`)
+                : chalk.yellow(`${Math.round(age.ageInDays)} days`)
+            : chalk.gray("unknown age");
 
           lines.push(chalk.red(`    + ${chalk.bold(dep.name)} (${dep.range})`));
-          lines.push(chalk.gray(`      Eta' del pacchetto: `) + ageStr);
+          lines.push(chalk.gray(`      Package age: `) + ageStr);
           if (age && age.publishedAt) {
-            lines.push(chalk.gray(`      Prima pubblicazione: ${age.publishedAt}`));
+            lines.push(chalk.gray(`      First published: ${age.publishedAt}`));
           }
           lines.push("");
         }
@@ -585,12 +585,12 @@ class NpmGuardEngine {
       // Dipendenze con script sospetti
       const suspiciousDeps = dr.dependencies.filter((d) => d.risk && d.risk.score > 0);
       if (suspiciousDeps.length > 0) {
-        lines.push(chalk.red.bold("  ── Dipendenze con script sospetti ──"));
+        lines.push(chalk.red.bold("  ── Dependencies with suspicious scripts ──"));
         lines.push("");
 
         for (const dep of suspiciousDeps) {
           const riskColor = dep.risk.level === "CRITICO" ? chalk.bgRed.white.bold : chalk.red.bold;
-          lines.push(`  ${chalk.bold(dep.name)}@${dep.version} ${riskColor(`[${dep.risk.level}]`)} (profondita': ${dep.depth})`);
+          lines.push(`  ${chalk.bold(dep.name)}@${dep.version} ${riskColor(`[${dep.risk.level}]`)} (depth: ${dep.depth})`);
 
           for (const finding of dep.findings) {
             if (!finding.hasSuspicious) continue;
@@ -606,7 +606,7 @@ class NpmGuardEngine {
       // Dipendenze sicure
       const safeDeps = dr.dependencies.filter((d) => d.risk && d.risk.score === 0);
       if (safeDeps.length > 0) {
-        lines.push(chalk.green(`  ${safeDeps.length} dipendenze senza script sospetti.`));
+        lines.push(chalk.green(`  ${safeDeps.length} dependencies without suspicious scripts.`));
         lines.push("");
       }
 
@@ -619,14 +619,14 @@ class NpmGuardEngine {
               : chalk.yellow.bold;
 
         lines.push(chalk.bold("  ════════════════════════════════"));
-        lines.push(chalk.bold("     VERDETTO COMPLESSIVO"));
+        lines.push(chalk.bold("     OVERALL VERDICT"));
         lines.push(chalk.bold("  ════════════════════════════════"));
-        lines.push(`  Rischio: ${color(level)} (punteggio: ${dr.aggregatedRisk.score})`);
+        lines.push(`  Risk: ${color(level)} (score: ${dr.aggregatedRisk.score})`);
 
         if (level === "CRITICO" || level === "ALTO") {
           lines.push("");
-          lines.push(chalk.red.bold("  RACCOMANDAZIONE: NON installare questo pacchetto."));
-          lines.push(chalk.red("  Verifica l'integrita' del pacchetto e del maintainer."));
+          lines.push(chalk.red.bold("  RECOMMENDATION: DO NOT install this package."));
+          lines.push(chalk.red("  Verify the integrity of the package and its maintainer."));
         }
       }
 
@@ -656,7 +656,7 @@ class NpmGuardEngine {
     }
 
     let html = `<!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -694,24 +694,24 @@ class NpmGuardEngine {
 <body>
 <div class="container">
   <h1>npm-guard Deep Scan Report</h1>
-  <p class="subtitle">Scansione profonda &mdash; ${new Date().toLocaleString("it-IT")}</p>
+  <p class="subtitle">Deep scan &mdash; ${new Date().toLocaleString("en-US")}</p>
 
   <div class="summary">
     <div class="stat">
       <div class="stat-value">${deepResults.length}</div>
-      <div class="stat-label">Pacchetti</div>
+      <div class="stat-label">Packages</div>
     </div>
     <div class="stat">
       <div class="stat-value">${totalDeps}</div>
-      <div class="stat-label">Dipendenze</div>
+      <div class="stat-label">Dependencies</div>
     </div>
     <div class="stat">
       <div class="stat-value" style="color: ${totalNewDeps > 0 ? "#f59e0b" : "#22c55e"}">${totalNewDeps}</div>
-      <div class="stat-label">Nuove dipendenze</div>
+      <div class="stat-label">New dependencies</div>
     </div>
     <div class="stat">
       <div class="stat-value" style="color: ${totalAlerts > 0 ? "#ef4444" : "#22c55e"}">${totalAlerts}</div>
-      <div class="stat-label">Alert supply-chain</div>
+      <div class="stat-label">Supply-chain alerts</div>
     </div>
   </div>`;
 
@@ -726,12 +726,12 @@ class NpmGuardEngine {
       <span class="pkg-name">${esc(dr.root.name)}@${esc(dr.root.version)}</span>
       <span class="badge" style="background:${bg}">${esc(risk.level)} (${risk.score})</span>
     </div>
-    <p style="color:#94a3b8;font-size:0.9rem">${dr.dependencies.length} dipendenze analizzate</p>`;
+    <p style="color:#94a3b8;font-size:0.9rem">${dr.dependencies.length} dependencies analyzed</p>`;
 
       // Root findings
       const rootSuspicious = (dr.root.findings || []).filter((f) => f.hasSuspicious);
       if (rootSuspicious.length > 0) {
-        html += `<h2>Script sospetti (pacchetto root)</h2>`;
+        html += `<h2>Suspicious scripts (root package)</h2>`;
         for (const f of rootSuspicious) {
           html += `<div class="finding"><span class="finding-hook">${esc(f.hook)}</span><div class="finding-cmd">${esc(f.command)}</div>`;
           for (const m of f.matches) {
@@ -744,15 +744,15 @@ class NpmGuardEngine {
 
       // Nuove dipendenze
       if (dr.dependencyAnalysis && dr.dependencyAnalysis.newDependencies.length > 0) {
-        html += `<h2>Dipendenze nuove (vs. ${esc(dr.dependencyAnalysis.previousVersion || "N/A")})</h2>`;
+        html += `<h2>New dependencies (vs. ${esc(dr.dependencyAnalysis.previousVersion || "N/A")})</h2>`;
         for (const dep of dr.dependencyAnalysis.newDependencies) {
           const age = dr.dependencyAnalysis.packageAges[dep.name];
           const ageStr = age
-            ? age.ageInDays < 1 ? `<span style="color:#dc2626;font-weight:bold">&lt; 24 ore</span>`
-              : age.ageInDays < 7 ? `<span style="color:#ef4444;font-weight:bold">${Math.round(age.ageInDays)} giorni</span>`
-                : `${Math.round(age.ageInDays)} giorni`
-            : "eta' sconosciuta";
-          html += `<div class="new-dep"><span class="new-dep-name">+ ${esc(dep.name)}</span> (${esc(dep.range)})<br><span class="new-dep-age">Eta': ${ageStr}</span></div>`;
+            ? age.ageInDays < 1 ? `<span style="color:#dc2626;font-weight:bold">&lt; 24 hours</span>`
+              : age.ageInDays < 7 ? `<span style="color:#ef4444;font-weight:bold">${Math.round(age.ageInDays)} days</span>`
+                : `${Math.round(age.ageInDays)} days`
+            : "unknown age";
+          html += `<div class="new-dep"><span class="new-dep-name">+ ${esc(dep.name)}</span> (${esc(dep.range)})<br><span class="new-dep-age">Age: ${ageStr}</span></div>`;
         }
       }
 
@@ -768,7 +768,7 @@ class NpmGuardEngine {
       // Dipendenze sospette
       const suspDeps = dr.dependencies.filter((d) => d.risk && d.risk.score > 0);
       if (suspDeps.length > 0) {
-        html += `<h2>Dipendenze con script sospetti</h2>`;
+        html += `<h2>Dependencies with suspicious scripts</h2>`;
         for (const dep of suspDeps) {
           const depBg = riskBg[dep.risk.level] || "#64748b";
           html += `<div class="finding"><div class="pkg-header"><span style="font-weight:bold">${esc(dep.name)}@${esc(dep.version)}</span> <span class="badge" style="background:${depBg}">${esc(dep.risk.level)}</span></div>`;
@@ -789,13 +789,13 @@ class NpmGuardEngine {
       // Verdetto
       html += `
   <div class="verdict" style="background:${bg}20;border:2px solid ${bg}">
-    <div style="font-size:1.5rem;font-weight:bold;color:${bg}">VERDETTO: ${esc(risk.level)}</div>
-    <div style="color:#94a3b8;margin-top:0.5rem">Punteggio: ${risk.score}</div>
+    <div style="font-size:1.5rem;font-weight:bold;color:${bg}">VERDICT: ${esc(risk.level)}</div>
+    <div style="color:#94a3b8;margin-top:0.5rem">Score: ${risk.score}</div>
   </div>`;
     }
 
     html += `
-  <footer>Report generato da npm-guard (deep scan) &mdash; https://github.com/Conradlog/npm-guard</footer>
+  <footer>Report generated by npm-guard (deep scan) &mdash; https://github.com/Conradlog/npm-guard</footer>
 </div>
 </body>
 </html>`;

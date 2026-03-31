@@ -9,7 +9,7 @@ const CONFIG_FILES = [
 ];
 
 const DEFAULT_CONFIG = {
-  // Regole abilitate e loro severita' minima per il report
+  // Enabled rules and their minimum severity for the report
   rules: {
     "shell-commands": true,
     "network-access": true,
@@ -20,18 +20,18 @@ const DEFAULT_CONFIG = {
     "dependency-risk": true,
   },
 
-  // Severita' minima da mostrare: "low" | "medium" | "high" | "critical"
+  // Minimum severity to display: "low" | "medium" | "high" | "critical"
   minSeverity: "low",
 
-  // Soglie punteggio rischio
+  // Risk score thresholds
   thresholds: {
     low: 3,
     medium: 10,
     high: 14,
-    // Sopra high = critico
+    // Above high = critical
   },
 
-  // Pesi per severita'
+  // Severity weights
   severityWeights: {
     low: 1,
     medium: 3,
@@ -39,27 +39,27 @@ const DEFAULT_CONFIG = {
     critical: 15,
   },
 
-  // Pacchetti da ignorare (fidati)
+  // Packages to ignore (trusted)
   ignore: [],
 
-  // Pattern sicuri aggiuntivi (regex strings)
+  // Additional safe patterns (regex strings)
   safePatterns: [],
 
-  // Plugin da caricare
+  // Plugins to load
   plugins: [],
 
-  // Formato output: "text" | "json" | "html"
+  // Output format: "text" | "json" | "html"
   format: "text",
 
-  // Lingua: "it" | "en"
+  // Language: "it" | "en"
   lang: "it",
 
-  // Exit code 1 se rischio >= questa soglia
+  // Exit code 1 if risk >= this threshold
   failOn: "critical",
 };
 
 /**
- * Cerca e carica il file di configurazione
+ * Search for and load the configuration file
  */
 function loadConfig(projectPath) {
   const searchPath = projectPath || process.cwd();
@@ -82,7 +82,7 @@ function loadConfig(projectPath) {
 }
 
 /**
- * Merge ricorsivo della configurazione utente con i default
+ * Recursive merge of user configuration with defaults
  */
 function mergeConfig(defaults, overrides) {
   const result = { ...defaults };
