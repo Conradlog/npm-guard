@@ -36,15 +36,16 @@
     "preinstall",
     "postinstall"
   ],
-  "author": "",
+  "author": "Conradlog",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/Conradlog/npm-guard.git"
   },
   "bugs": {
-    "url": ""
+    "url": "https://github.com/Conradlog/npm-guard/issues"
   },
+  "homepage": "https://github.com/Conradlog/npm-guard#readme",
   "engines": {
     "node": ">=16.0.0"
   },

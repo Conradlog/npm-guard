@@ -117,7 +117,7 @@ function format(results, options = {}) {
   }
 
   html += `
-  <footer>Report generato da npm-guard &mdash; https://github.com/user/npm-guard</footer>
+  <footer>Report generato da npm-guard &mdash; https://github.com/Conradlog/npm-guard</footer>
 </div>
 </body>
 </html>`;

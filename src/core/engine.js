@@ -795,7 +795,7 @@ class NpmGuardEngine {
     }
 
     html += `
-  <footer>Report generato da npm-guard (deep scan) &mdash; https://github.com/user/npm-guard</footer>
+  <footer>Report generato da npm-guard (deep scan) &mdash; https://github.com/Conradlog/npm-guard</footer>
 </div>
 </body>
 </html>`;
