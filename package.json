@@ -1,5 +1,5 @@
 {
-  "name": "npm-guard",
+  "name": "@corsaroblue/npm-guard",
   "version": "2.0.0",
   "description": "Scan npm packages for malicious lifecycle scripts before installing them",
   "main": "src/index.js",
